@@ -20,30 +20,16 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path=Path('index.html')
           text=path.read_text(encoding='utf-8')
-          old="""      if(pricingMode==='sizes'){
-        const rows=sizes.map(size=>({...size,product_id:createdId}));
-        const{error:sizeError}=await db.from('product_sizes').insert(rows);
-        if(sizeError)throw sizeError;
-      }
-
-      document.querySelector('#product-edit-modal')?.classList.remove('show');"""
-          new="""      if(pricingMode==='sizes'){
-        const savedCategory=menuCategories.find(entry=>String(entry.id)===String(categoryId));
-        const isPizza=String(savedCategory?.slug||'').toLowerCase()==='pizzas';
-        const pizzaSizeNames={P:'Pequena',M:'Média',G:'Grande'};
-        const rows=sizes.map(size=>({...size,name:isPizza?(pizzaSizeNames[size.name]||size.name):size.name,product_id:createdId}));
-        const{error:sizeError}=await db.from('product_sizes').insert(rows);
-        if(sizeError)throw sizeError;
-      }
-
-      document.querySelector('#product-edit-modal')?.classList.remove('show');"""
-          count=text.count(old)
-          if count != 1:
-              raise SystemExit(f'Expected final size insert block once, found {count}')
-          text=text.replace(old,new,1)
+          needle="        const rows=sizes.map(size=>({...size,product_id:createdId}));"
+          pos=text.rfind(needle)
+          if pos < 0:
+              raise SystemExit('Final product size insert line not found')
+          replacement="        const savedCategory=menuCategories.find(entry=>String(entry.id)===String(categoryId));\n        const isPizza=String(savedCategory?.slug||'').toLowerCase()==='pizzas';\n        const pizzaSizeNames={P:'Pequena',M:'Média',G:'Grande'};\n        const rows=sizes.map(size=>({...size,name:isPizza?(pizzaSizeNames[size.name]||size.name):size.name,product_id:createdId}));"
+          text=text[:pos]+replacement+text[pos+len(needle):]
+          if text.count('const pizzaSizeNames=') != 1:
+              raise SystemExit('Pizza size canonicalization was not applied exactly once')
           path.write_text(text,encoding='utf-8')
           PY
       - name: Validate inline JavaScript
