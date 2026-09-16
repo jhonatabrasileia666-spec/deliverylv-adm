@@ -1,0 +1,72 @@
+name: Fix pizza size save
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-pizza-size-save.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch pizza size persistence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path=Path('index.html')
+          text=path.read_text(encoding='utf-8')
+          old="""      if(pricingMode==='sizes'){
+        const rows=sizes.map(size=>({...size,product_id:createdId}));
+        const{error:sizeError}=await db.from('product_sizes').insert(rows);
+        if(sizeError)throw sizeError;
+      }
+
+      document.querySelector('#product-edit-modal')?.classList.remove('show');"""
+          new="""      if(pricingMode==='sizes'){
+        const savedCategory=menuCategories.find(entry=>String(entry.id)===String(categoryId));
+        const isPizza=String(savedCategory?.slug||'').toLowerCase()==='pizzas';
+        const pizzaSizeNames={P:'Pequena',M:'Média',G:'Grande'};
+        const rows=sizes.map(size=>({...size,name:isPizza?(pizzaSizeNames[size.name]||size.name):size.name,product_id:createdId}));
+        const{error:sizeError}=await db.from('product_sizes').insert(rows);
+        if(sizeError)throw sizeError;
+      }
+
+      document.querySelector('#product-edit-modal')?.classList.remove('show');"""
+          count=text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected final size insert block once, found {count}')
+          text=text.replace(old,new,1)
+          path.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re,subprocess
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,re.S|re.I)
+          for i,code in enumerate(scripts):
+              if not code.strip(): continue
+              tmp=Path(f'/tmp/admin-{i}.js')
+              tmp.write_text(code,encoding='utf-8')
+              subprocess.run(['node','--check',str(tmp)],check=True)
+          print('Inline JavaScript valid')
+          PY
+      - name: Commit fix and remove temporary workflow
+        run: |
+          rm -f .github/workflows/fix-pizza-size-save.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: preserve canonical pizza sizes from admin editor'
+          git push
