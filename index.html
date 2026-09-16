@@ -180,6 +180,16 @@
     .driver-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.driver-field{display:grid;gap:6px}.driver-field.full{grid-column:1/-1}.driver-field label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.driver-field input,.driver-field select,.driver-field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);color:var(--text);font:inherit}.driver-field textarea{min-height:80px;resize:vertical}.driver-active-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:16px;padding:13px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px}.driver-active-row strong{display:block;font-size:12px}.driver-active-row small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
     @media(max-width:700px){.nav{grid-template-columns:repeat(6,1fr)}.nav-item{padding:9px 2px}.nav-item span{font-size:7px}.drivers-table{overflow-x:auto}.drivers-table .driver-head,.drivers-table .driver-row{min-width:670px}.driver-form-grid{grid-template-columns:1fr}}
   </style>
+  <style id="mobile-nav-labels-fix">
+    @media(max-width:700px){
+      .nav{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+      .nav-item{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 1px!important;min-width:0}
+      .nav-item svg{width:17px;height:17px;flex:none}
+      .nav-item span{display:block!important;font-size:7px!important;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+      .nav-count{position:absolute;top:2px;right:4px;transform:scale(.82)}
+      .nav-item{position:relative}
+    }
+  </style>
 </head>
 <body>
 
