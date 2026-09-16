@@ -1,0 +1,29 @@
+name: Apply mobile nav labels fix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/fix_mobile_nav_labels.py'
+      - '.github/workflows/apply-mobile-nav-labels.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch mobile navigation
+        run: python .github/scripts/fix_mobile_nav_labels.py
+      - name: Validate mobile navigation
+        run: |
+          grep -q 'mobile-nav-labels-fix' index.html
+          grep -q 'display:block!important' index.html
+          grep -q 'data-view="drivers"' index.html
+      - name: Commit final change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/scripts/fix_mobile_nav_labels.py .github/workflows/apply-mobile-nav-labels.yml
+          git add -A
+          git commit -m "fix: show mobile navigation labels"
+          git push
