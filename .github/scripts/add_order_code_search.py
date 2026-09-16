@@ -52,7 +52,8 @@ history_fn=r'''  function renderHistory(){
     lucide.createIcons();
   }
 '''
-s,count=re.subn(r"  function renderHistory\(\)\{.*?\n  function renderStats",history_fn+"  function renderStats",s,count=1,flags=re.S)
+pattern=r"  function renderHistory\(\)\{.*?\n  function renderStats"
+s,count=re.subn(pattern,lambda m: history_fn+"  function renderStats",s,count=1,flags=re.S)
 if count!=1: raise SystemExit('renderHistory replacement failed')
 
 # 6) Details include public order code
