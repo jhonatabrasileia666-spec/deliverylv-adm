@@ -26,16 +26,9 @@ if '<strong>${item.qty}x ${item.name}</strong>' in s:
 if '<span>- ${item.detail}</span>' in s:
     raise SystemExit('unsafe item detail render remains')
 
-# 2) Correct history date and business timezone.
-marker='  function renderHistory(){'
-if marker not in s:
-    raise SystemExit('renderHistory marker not found')
-helper="""  function formatHistoryDate(value){
-    try{return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(value))}
-    catch{return 'Data indisponível'}
-  }
-"""
-s=s.replace(marker,helper+marker,1)
+# 2) Correct history date and business timezone. Reuse the helper that already exists.
+if 'function formatHistoryDate' not in s:
+    raise SystemExit('existing formatHistoryDate helper not found')
 s=s.replace("toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})","toLocaleTimeString('pt-BR',{timeZone:'America/Rio_Branco',hour:'2-digit',minute:'2-digit'})")
 
 # 3) Add authenticated store open/close control.
