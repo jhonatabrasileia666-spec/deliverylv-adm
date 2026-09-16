@@ -1,0 +1,25 @@
+name: Add internet image picker
+on:
+  push:
+    paths:
+      - '.github/workflows/add-internet-image-picker.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Patch admin index
+        run: python .github/scripts/add_internet_image_picker.py
+      - name: Commit result and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git rm -f .github/workflows/add-internet-image-picker.yml .github/scripts/add_internet_image_picker.py
+          git commit -m "feat: add internet image search picker"
+          git push
