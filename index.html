@@ -338,17 +338,18 @@ window.LVAlerts=(()=>{
   }
   function vibrate(){try{navigator.vibrate?.([300,120,300,120,500])}catch(error){}}
   async function ensureSw(){if(swRegistration)return swRegistration;if(!('serviceWorker' in navigator))return null;try{swRegistration=await navigator.serviceWorker.register('./notification-sw.js',{scope:'./'});return swRegistration}catch(error){console.warn('Service Worker de alerta indisponível',error);return null}}
-  async function systemNotify(title,body,tag){if(!('Notification' in window)||Notification.permission!=='granted')return;try{const reg=await ensureSw();if(reg?.showNotification){await reg.showNotification(title,{body,tag,renotify:true,vibrate:[250,120,250],icon:'./icon-192.png'});return}new Notification(title,{body,tag})}catch(error){console.warn('Notificação do sistema indisponível',error)}}
+  async function systemNotify(title,body,tag){if(!('Notification' in window)||Notification.permission!=='granted')return;try{const reg=await ensureSw();if(reg?.showNotification){await reg.showNotification(title,{body,tag,renotify:true,vibrate:[250,120,250],icon:'./pwa-icon-192.svg'});return}new Notification(title,{body,tag})}catch(error){console.warn('Notificação do sistema indisponível',error)}}
   function banner(key,title,body){document.querySelectorAll('.lv-urgent-alert').forEach(node=>node.remove());const node=document.createElement('div');node.className='lv-urgent-alert';node.dataset.alertKey=key;node.innerHTML=`<div class="lv-urgent-alert-icon"><i data-lucide="bell-ring"></i></div><div class="lv-urgent-alert-copy"><strong>${String(title).replace(/[<>]/g,'')}</strong><span>${String(body).replace(/[<>]/g,'')}</span></div><button type="button" data-lv-alert-dismiss="${key}">OK</button>`;document.body.appendChild(node);window.lucide?.createIcons()}
   function pulse(title,body,tag,withSystem=false){beep();vibrate();if(withSystem)systemNotify(title,body,tag)}
   function stop(key){const timer=timers.get(key);if(timer)clearInterval(timer);timers.delete(key);document.querySelector(`.lv-urgent-alert[data-alert-key="${CSS.escape(key)}"]`)?.remove()}
+  function stopAll(){[...timers.keys()].forEach(stop);document.querySelectorAll('.lv-urgent-alert').forEach(node=>node.remove())}
   function start(key,title,body,{repeats=1200,interval=3000}={}){stop(key);banner(key,title,body);pulse(title,body,key,true);let count=1;const timer=setInterval(()=>{count+=1;if(count>repeats){stop(key);return}pulse(title,body,key,false)},interval);timers.set(key,timer)}
   function updateButtons(){const granted=('Notification' in window)&&Notification.permission==='granted';document.querySelectorAll('[data-enable-alerts]').forEach(button=>{button.classList.toggle('alerts-on',granted);const span=button.querySelector('span');if(span)span.textContent=granted?'Alertas ativos':'Ativar alertas';button.title=granted?'Som, vibração e notificações ativados':'Ativar som, vibração e notificações'})}
   async function enable(){getAudio();await ensureSw();if('Notification' in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(error){}}updateButtons();beep();vibrate()}
   document.addEventListener('pointerdown',()=>getAudio(),{once:true,capture:true});
   document.addEventListener('click',event=>{const enableButton=event.target.closest('[data-enable-alerts]');if(enableButton){enable();return}const dismiss=event.target.closest('[data-lv-alert-dismiss]');if(dismiss)stop(dismiss.dataset.lvAlertDismiss)});
   window.addEventListener('load',()=>{ensureSw();updateButtons()});
-  return{start,stop,enable,prime:getAudio,updateButtons};
+  return{start,stop,stopAll,enable,prime:getAudio,updateButtons};
 })();
 </script>
 
@@ -679,7 +680,7 @@ window.LVAlerts=(()=>{
   document.addEventListener('click',async event=>{const remove=event.target.closest('[data-remove-expense]');if(!remove)return;const expense=expenses[Number(remove.dataset.removeExpense)];if(!expense?.id)return;const{error}=await db.from('expenses').delete().eq('id',expense.id);if(error){console.error('Erro ao remover gasto:',error);showToast('Erro ao remover gasto');return}await loadExpenses()});
   const financeNav=document.createElement('button');financeNav.className='nav-item';financeNav.dataset.view='finance';financeNav.innerHTML='<i data-lucide="calculator"></i><span>Logística</span>';document.querySelector('.nav').appendChild(financeNav);
   document.addEventListener('click',event=>{const statusTab=event.target.closest('[data-status-tab]');if(statusTab){currentFilter=statusTab.dataset.statusTab;renderBoard('orders-board')}});
-  document.querySelector('#close-notice').onclick=()=>{document.querySelector('#notification').classList.remove('show');window.LVAlerts?.stop('admin-new-order')};document.querySelector('[data-export-history]').onclick=()=>{const rows=orders.filter(order=>order.status==='done'),csv=['Pedido,Cliente,Horário,Total,Status',...rows.map(order=>[order.id,order.customer,order.time,order.total,statusMeta[order.status].label].map(value=>`"${String(value).replaceAll('"','""')}"`).join(','))].join('\n'),link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='historico-pedidos.csv';link.click();URL.revokeObjectURL(link.href);showToast('Histórico exportado')};document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.remove('active'));button.classList.add('active');currentFilter=button.dataset.filter;renderBoard('orders-board')});lucide.createIcons();
+  document.querySelector('#close-notice').onclick=async()=>{document.querySelector('#notification').classList.remove('show');window.LVAlerts?.stopAll?.();await window.LVBackgroundPush?.stopCurrent?.()};document.querySelector('[data-export-history]').onclick=()=>{const rows=orders.filter(order=>order.status==='done'),csv=['Pedido,Cliente,Horário,Total,Status',...rows.map(order=>[order.id,order.customer,order.time,order.total,statusMeta[order.status].label].map(value=>`"${String(value).replaceAll('"','""')}"`).join(','))].join('\n'),link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='historico-pedidos.csv';link.click();URL.revokeObjectURL(link.href);showToast('Histórico exportado')};document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.remove('active'));button.classList.add('active');currentFilter=button.dataset.filter;renderBoard('orders-board')});lucide.createIcons();
   async function initPanel(){
     await loadDailyCosts();
     await loadExpenses();
@@ -1428,7 +1429,7 @@ window.LVAlerts=(()=>{
       return response.ok;
     }catch(error){console.error('Erro ao parar alerta:',error);return false}
   }
-  function hideBanner(){banner?.classList.remove('show');window.LVAlerts?.stop?.('server-push');currentAlert=null}
+  function hideBanner(){banner?.classList.remove('show');window.LVAlerts?.stopAll?.();currentAlert=null}
   function showBanner(data){
     if(!data?.alertId)return;
     const same=String(currentAlert?.alertId||'')===String(data.alertId);
