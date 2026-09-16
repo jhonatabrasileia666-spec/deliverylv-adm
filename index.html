@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{--bg:#11100f;--panel:#191715;--panel-2:#211e1b;--panel-3:#292420;--line:#37312c;--text:#eadfd2;--muted:#a49b92;--orange:#ff5a16;--orange-soft:#ff7c32;--lime:#d9f15c;--blue:#8ec9ff;--purple:#c1a6ff;--red:#ff8f79;--shadow:0 18px 55px #0008}
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px Manrope,system-ui,sans-serif}button{font:inherit;color:inherit;border:0;cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--lime);outline-offset:3px}a{color:inherit;text-decoration:none}.app{min-height:100vh}.topbar{position:sticky;top:0;z-index:30;height:72px;background:#11100ff2;border-bottom:1px solid #ffffff12;backdrop-filter:blur(18px)}.topbar-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 24px}.brand{display:flex;align-items:center;gap:10px}.brand-mark{width:40px;height:40px;display:grid;place-items:center;background:var(--orange);color:#1a100b;border-radius:11px 11px 11px 3px;font:900 25px/1 "Barlow Condensed"}.brand-copy{line-height:.84}.brand-copy strong{display:block;font:800 24px/1 "Barlow Condensed";letter-spacing:.04em}.brand-copy small{display:block;margin-top:4px;color:var(--orange-soft);font-size:8px;font-weight:800;letter-spacing:.16em}.top-status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;font-weight:700}.live-dot{width:8px;height:8px;background:var(--lime);border-radius:50%;box-shadow:0 0 0 5px #d9f15c1a}.top-right{display:flex;align-items:center;gap:22px}.demo-pill{display:flex;align-items:center;gap:7px;color:#e7ded5;font-size:11px}.demo-pill i{width:7px;height:7px;border-radius:50%;background:var(--orange)}.user{display:flex;align-items:center;gap:9px;padding-left:16px;border-left:1px solid var(--line);color:var(--muted);font-size:12px}.avatar{width:32px;height:32px;display:grid;place-items:center;background:#34251d;color:var(--orange-soft);border-radius:50%;font-weight:800}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px Manrope,system-ui,sans-serif}button{font:inherit;color:inherit;border:0;cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--lime);outline-offset:3px}a{color:inherit;text-decoration:none}.app{min-height:100vh;display:none}.app.authenticated{display:block}.topbar{position:sticky;top:0;z-index:30;height:72px;background:#11100ff2;border-bottom:1px solid #ffffff12;backdrop-filter:blur(18px)}.topbar-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 24px}.brand{display:flex;align-items:center;gap:10px}.brand-mark{width:40px;height:40px;display:grid;place-items:center;background:var(--orange);color:#1a100b;border-radius:11px 11px 11px 3px;font:900 25px/1 "Barlow Condensed"}.brand-copy{line-height:.84}.brand-copy strong{display:block;font:800 24px/1 "Barlow Condensed";letter-spacing:.04em}.brand-copy small{display:block;margin-top:4px;color:var(--orange-soft);font-size:8px;font-weight:800;letter-spacing:.16em}.top-status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px;font-weight:700}.live-dot{width:8px;height:8px;background:var(--lime);border-radius:50%;box-shadow:0 0 0 5px #d9f15c1a}.top-right{display:flex;align-items:center;gap:22px}.demo-pill{display:flex;align-items:center;gap:7px;color:#e7ded5;font-size:11px}.demo-pill i{width:7px;height:7px;border-radius:50%;background:var(--orange)}.user{display:flex;align-items:center;gap:9px;padding-left:16px;border-left:1px solid var(--line);color:var(--muted);font-size:12px}.avatar{width:32px;height:32px;display:grid;place-items:center;background:#34251d;color:var(--orange-soft);border-radius:50%;font-weight:800}
     .layout{display:grid;grid-template-columns:224px minmax(0,1fr);max-width:1500px;margin:auto}.sidebar{position:sticky;top:72px;height:calc(100vh - 72px);display:flex;flex-direction:column;padding:24px 14px;border-right:1px solid #ffffff0d}.nav-label{padding:0 12px 10px;color:#716960;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.nav{display:grid;gap:4px}.nav-item{display:flex;align-items:center;gap:12px;padding:13px 12px;border:1px solid transparent;border-radius:10px;color:var(--muted);font-size:13px;font-weight:700;text-align:left}.nav-item svg{width:17px;height:17px}.nav-item:hover{color:var(--text);background:#ffffff08}.nav-item.active{background:#2d1b13;border-color:#ff5a1640;color:var(--orange-soft)}.nav-count{min-width:20px;height:20px;display:grid;place-items:center;margin-left:auto;border-radius:6px;background:var(--orange);color:#1b110b;font-size:10px}.sidebar-bottom{margin-top:auto;padding:16px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.6}.main{min-width:0;padding:28px 34px 80px}.view{display:none}.view.active{display:block;animation:view-in .3s ease}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:26px}.eyebrow{color:var(--orange-soft);font-size:10px;font-weight:800;letter-spacing:.17em;text-transform:uppercase}.page-head h1{margin:7px 0 7px;font:800 clamp(34px,4vw,52px)/.9 "Barlow Condensed";letter-spacing:.01em;text-transform:uppercase}.page-head p{margin:0;color:var(--muted);font-size:13px}.head-actions{display:flex;align-items:center;gap:9px}.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 15px;border-radius:9px;background:var(--orange);color:#1b110b;font-size:12px;font-weight:900}.button:hover{background:var(--orange-soft)}.button.secondary{background:var(--panel-3);border:1px solid var(--line);color:var(--text)}.button.danger{background:#3c211c;color:#ffb0a0}.button.small{min-height:34px;padding:0 11px;font-size:11px}.button svg{width:15px;height:15px}
     .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}.stat{padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.stat-top{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:700}.stat-top svg{width:16px;height:16px;color:var(--orange-soft)}.stat-value{margin-top:12px;font:800 31px/1 "Barlow Condensed"}.stat-note{margin-top:6px;color:var(--muted);font-size:10px}.stat-highlight{border-color:#ff5a1670;background:#281913}.order-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:15px}.order-toolbar h2{margin:0;font:800 28px/1 "Barlow Condensed";text-transform:uppercase}.order-filters{display:flex;gap:7px;overflow:auto}.filter{flex:none;padding:9px 12px;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:11px;font-weight:800}.filter.active{background:var(--orange);border-color:var(--orange);color:#1b110b}.order-grid{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:12px}.order-column{min-width:0;padding:12px;background:#161412;border:1px solid var(--line);border-radius:12px}.column-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 12px}.column-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900;text-transform:uppercase}.column-title:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}.column-new .column-title{color:var(--orange-soft)}.column-new .column-title:before{background:var(--orange);box-shadow:0 0 0 4px #ff5a1620}.column-prep .column-title:before{background:var(--blue)}.column-ready .column-title:before{background:var(--lime)}.column-count{min-width:22px;height:22px;display:grid;place-items:center;background:var(--panel-3);border-radius:6px;color:var(--muted);font-size:10px}.column-list{display:grid;gap:9px}.order-card{padding:14px;background:var(--panel);border:1px solid #ffffff12;border-radius:10px;transition:transform .2s,border-color .2s}.order-card:hover{transform:translateY(-2px);border-color:#ff5a1666}.order-card.new{border-color:#ff5a1670;box-shadow:inset 3px 0 var(--orange)}.order-card-top{display:flex;justify-content:space-between;gap:10px}.order-number{color:var(--orange-soft);font-size:12px;font-weight:900}.order-time{color:var(--muted);font-size:10px}.customer{margin-top:8px;font-size:14px;font-weight:800}.order-meta{display:flex;align-items:center;gap:7px;margin-top:4px;color:var(--muted);font-size:10px}.order-meta svg{width:12px;height:12px}.item-list{display:grid;gap:7px;margin:14px 0;padding:11px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.item{font-size:11px;line-height:1.4}.item strong{color:var(--text)}.item span{display:block;padding-left:21px;color:var(--muted);font-size:10px}.order-info{display:grid;gap:6px;color:var(--muted);font-size:10px}.info-line{display:flex;justify-content:space-between;gap:10px}.info-line strong{color:#ddd4ca;text-align:right}.total-line{display:flex;align-items:center;justify-content:space-between;margin-top:13px;font-size:11px;font-weight:800}.total-line strong{color:var(--orange-soft);font-size:16px}.card-actions{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:13px}.card-actions .button{width:100%}.mini-action{width:35px;min-height:35px;display:grid;place-items:center;background:var(--panel-3);border:1px solid var(--line);border-radius:8px}.mini-action:hover{border-color:var(--orange)}.mini-action svg{width:15px}.empty-column{padding:25px 8px;text-align:center;color:#716960;font-size:11px}
     .notification{position:fixed;z-index:60;right:22px;bottom:22px;display:flex;align-items:center;gap:13px;width:min(370px,calc(100vw - 32px));padding:15px;background:#2a1a13;border:1px solid #ff5a1680;border-radius:12px;box-shadow:var(--shadow);transform:translateY(20px);opacity:0;pointer-events:none}.notification.show{animation:notice-in .35s ease forwards}.notification-icon{width:36px;height:36px;display:grid;place-items:center;background:var(--orange);color:#1b110b;border-radius:9px}.notification-icon svg{width:18px}.notification-copy{flex:1}.notification-copy strong{display:block;font-size:12px}.notification-copy span{display:block;margin-top:3px;color:#c6b9ad;font-size:10px}.notification-close{color:var(--muted);background:transparent}.notification-close svg{width:16px}
@@ -109,10 +109,54 @@
     #orders-board .status-tabs{display:grid;grid-template-columns:repeat(5,minmax(105px,1fr));width:100%;overflow:visible}
     @media(max-width:700px){#orders-board .status-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
+  <style>
+    .login-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:
+      radial-gradient(circle at 20% 15%,rgba(255,90,22,.13),transparent 34%),
+      radial-gradient(circle at 80% 85%,rgba(217,241,92,.06),transparent 30%),var(--bg)}
+    .login-card{width:min(430px,100%);padding:28px;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+    .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}.login-brand .brand-mark{flex:none}
+    .login-card .eyebrow{display:block;margin-bottom:8px}.login-card h1{margin:0;font:800 42px/.92 "Barlow Condensed";text-transform:uppercase}
+    .login-card p{margin:10px 0 22px;color:var(--muted);font-size:12px;line-height:1.55}
+    .login-mode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}.login-mode-button{min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);color:var(--muted);font-size:10px;font-weight:900}.login-mode-button.active{background:#2d1b13;border-color:var(--orange);color:var(--orange-soft)}.login-form{display:grid;gap:12px}.login-field{display:grid;gap:7px}.login-field label{color:#d9cec3;font-size:11px;font-weight:800}
+    .login-input,.account-input{width:100%;height:46px;padding:0 13px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;color:var(--text);font:12px Manrope,sans-serif}
+    .login-input::placeholder,.account-input::placeholder{color:#756d66}.login-form .button{width:100%;min-height:46px;margin-top:4px}
+    .auth-message{min-height:18px;margin-top:12px;color:var(--red);font-size:11px;line-height:1.45}.auth-message.success{color:var(--lime)}
+    .login-help{margin-top:18px;padding-top:15px;border-top:1px solid var(--line);color:#7f766f;font-size:10px;line-height:1.55}
+    button.user{background:transparent;cursor:pointer;text-align:left}.user:hover{color:var(--text)}.user:focus-visible{border-radius:9px}
+    .account-role{display:inline-flex;margin-top:5px;padding:4px 7px;border-radius:6px;background:#2d1b13;color:var(--orange-soft);font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+    .account-section{padding:15px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;margin-top:12px}
+    .account-section h3{margin:0 0 6px;font:800 21px/1 "Barlow Condensed";text-transform:uppercase}.account-section p{margin:0 0 13px;color:var(--muted);font-size:10px;line-height:1.5}
+    .account-form{display:grid;gap:9px}.account-form .button{margin-top:2px}.account-status{min-height:16px;color:var(--muted);font-size:10px;line-height:1.4}
+    .account-status.error{color:var(--red)}.account-status.ok{color:var(--lime)}
+    .account-footer{display:flex;gap:8px;margin-top:14px}.account-footer .button{flex:1}
+    @media(max-width:700px){.login-card{padding:22px}.login-card h1{font-size:36px}.login-screen{padding:16px}.account-footer{flex-direction:column}}
+  </style>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><div class="user"><span>Proprietária</span><span class="avatar">LV</span></div></div></div></header>
+
+  <section class="login-screen" id="login-screen">
+    <div class="login-card">
+      <div class="login-brand"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>PAINEL ADMINISTRATIVO</small></span></div>
+      <span class="eyebrow">Acesso protegido</span>
+      <h1>Entrar no painel</h1>
+      <p>Entre com o e-mail e a senha cadastrados.</p>
+      <form class="login-form" id="login-form">
+        <div class="login-field" id="login-user-field">
+          <label for="login-user">E-mail</label>
+          <input class="login-input" id="login-user" type="email" autocomplete="username" placeholder="Digite o e-mail cadastrado">
+        </div>
+        <div class="login-field">
+          <label for="login-password" id="login-password-label">Senha</label>
+          <input class="login-input" id="login-password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required>
+        </div>
+        <button class="button" id="login-submit" type="submit"><i data-lucide="log-in"></i><span id="login-submit-label">Entrar</span></button>
+      </form>
+      <div class="auth-message" id="login-message" role="status" aria-live="polite"></div>
+      <div class="login-help">Por segurança, a senha não fica gravada no código do site. Após tentativas incorretas repetidas, o acesso é temporariamente bloqueado.</div>
+    </div>
+  </section>
+  <div class="app" id="panel-app">
+    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
     <div class="layout">
       <aside class="sidebar"><div class="nav-label">Operação</div><nav class="nav"><button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Visão geral</span></button><button class="nav-item" data-view="orders"><i data-lucide="inbox"></i><span>Pedidos</span><b class="nav-count" id="new-count">2</b></button><button class="nav-item" data-view="menu"><i data-lucide="book-open"></i><span>Cardápio</span></button><button class="nav-item" data-view="history"><i data-lucide="archive"></i><span>Histórico</span></button></nav><div class="sidebar-bottom">Central local de pedidos<br><strong>Atualizado agora</strong></div></aside>
       <main class="main">
@@ -125,11 +169,61 @@
     </div>
     <div class="notification" id="notification"><div class="notification-icon"><i data-lucide="bell-ring"></i></div><div class="notification-copy"><strong>Novo pedido recebido</strong><span id="notification-text">Pedido #1047 de Ana chegou agora.</span></div><button class="notification-close" id="close-notice" aria-label="Fechar aviso"><i data-lucide="x"></i></button></div>
     <div class="modal-layer" id="detail-modal"><div class="modal"><div class="modal-head"><h2>Detalhes do pedido</h2><button class="close" data-close-modal aria-label="Fechar"><i data-lucide="x"></i></button></div><div id="modal-content"></div></div></div>
+    <div class="modal-layer" id="account-modal">
+      <div class="modal">
+        <div class="modal-head"><div><h2>Minha conta</h2><span class="account-role" id="account-role">Acesso</span></div><button class="close" id="close-account" type="button" aria-label="Fechar"><i data-lucide="x"></i></button></div>
+        <div class="account-section">
+          <h3 id="account-title">Conta conectada</h3>
+          <p id="account-description">Carregando informações do acesso...</p>
+        </div>
+        <div class="account-section" id="owner-section" style="display:none">
+          <h3>Acesso da proprietária</h3>
+          <p id="owner-description">Cadastre o e-mail e uma senha inicial para a dona da Delivery LV.</p>
+          <form class="account-form" id="owner-form">
+            <input class="account-input" id="owner-email" type="email" autocomplete="email" placeholder="E-mail da proprietária" required>
+            <input class="account-input" id="owner-password" type="password" autocomplete="new-password" minlength="8" placeholder="Senha inicial (mínimo 8 caracteres)" required>
+            <button class="button small" type="submit"><i data-lucide="user-plus"></i>Cadastrar acesso da dona</button>
+          </form>
+          <div class="account-status" id="owner-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="account-section">
+          <h3>Alterar minha senha</h3>
+          <p>A nova senha precisa ter pelo menos 8 caracteres. Ao trocar, sua sessão atual será encerrada.</p>
+          <form class="account-form" id="password-form">
+            <input class="account-input" id="current-password" type="password" autocomplete="current-password" placeholder="Senha atual" required>
+            <input class="account-input" id="new-password" type="password" autocomplete="new-password" minlength="8" placeholder="Nova senha (mínimo 8 caracteres)" required>
+            <button class="button secondary small" type="submit"><i data-lucide="key-round"></i>Trocar minha senha</button>
+          </form>
+          <div class="account-status" id="password-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="account-footer"><button class="button danger" id="logout-button" type="button"><i data-lucide="log-out"></i>Sair da conta</button></div>
+      </div>
+    </div>
   </div>
 <script>
   const SUPABASE_URL='https://nhvarlrbqbryrurpdwvp.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY='sb_publishable_0nKLavga7G2XF-Ckz34tbw_VNbqfdo1';
-  const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  const PANEL_SESSION_KEY='deliverylv_panel_session';
+  const createPanelClient=token=>window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
+    token?{global:{headers:{'x-panel-session':token}}}:{}
+  );
+  let panelToken=localStorage.getItem(PANEL_SESSION_KEY)||'';
+  let panelProfile=null;
+  let db=createPanelClient(panelToken);
+  const publicDb=createPanelClient('');
+  async function panelAuth(action,{login=null,password=null,newPassword=null}={}){
+    const client=action==='login'?publicDb:db;
+    const {data,error}=await client.rpc('lv_panel_auth',{
+      p_action:action,
+      p_login:login,
+      p_password:password,
+      p_new_password:newPassword
+    });
+    if(error)throw error;
+    return data;
+  }
   const statusMeta={new:{label:'Novo pedido',next:'prep',nextLabel:'Mandar para preparo'},accepted:{label:'Aceito',next:'prep',nextLabel:'Enviar para preparo'},prep:{label:'Em preparo',next:'ready',nextLabel:'Marcar como pronto'},ready:{label:'Pronto',next:'delivery',nextLabel:'Saiu para entrega'},delivery:{label:'Saiu para entrega',next:'done',nextLabel:'Finalizar pedido'},done:{label:'Finalizado',next:null,nextLabel:'Finalizado'},cancelled:{label:'Recusado',next:null,nextLabel:'Recusado'}};
   let orders=[];let currentFilter='all';let ordersChannel=null;let ordersRefreshTimer=null;let knownOrderIds=new Set();
   const money=value=>value.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -201,8 +295,195 @@
   const financeNav=document.createElement('button');financeNav.className='nav-item';financeNav.dataset.view='finance';financeNav.innerHTML='<i data-lucide="calculator"></i><span>Logística</span>';document.querySelector('.nav').appendChild(financeNav);
   document.addEventListener('click',event=>{const statusTab=event.target.closest('[data-status-tab]');if(statusTab){currentFilter=statusTab.dataset.statusTab;renderBoard('orders-board')}});
   document.querySelector('#close-notice').onclick=()=>document.querySelector('#notification').classList.remove('show');document.querySelector('[data-export-history]').onclick=()=>{const rows=orders.filter(order=>order.status==='done'),csv=['Pedido,Cliente,Horário,Total,Status',...rows.map(order=>[order.id,order.customer,order.time,order.total,statusMeta[order.status].label].map(value=>`"${String(value).replaceAll('"','""')}"`).join(','))].join('\n'),link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='historico-pedidos.csv';link.click();URL.revokeObjectURL(link.href);showToast('Histórico exportado')};document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.remove('active'));button.classList.add('active');currentFilter=button.dataset.filter;renderBoard('orders-board')});lucide.createIcons();
-  async function init(){await loadDailyCosts();await loadExpenses();await loadRealOrders({notify:false});loadRealMenu();subscribeToOrders();startOrdersRefresh();if(location.hash==='#finance')switchView('finance')}
-  init().catch(error=>{console.error('Erro ao iniciar painel:',error);showToast('Erro ao iniciar painel')});
+  async function initPanel(){
+    await loadDailyCosts();
+    await loadExpenses();
+    await loadRealOrders({notify:false});
+    loadRealMenu();
+    subscribeToOrders();
+    startOrdersRefresh();
+    if(location.hash==='#finance')switchView('finance');
+  }
+
+  function showLogin(message=''){
+    document.querySelector('#panel-app').classList.remove('authenticated');
+    document.querySelector('#login-screen').style.display='grid';
+    const status=document.querySelector('#login-message');
+    status.textContent=message;
+    document.querySelector('#login-password').value='';
+    lucide.createIcons();
+  }
+
+  function renderPanelProfile(profile){
+    panelProfile=profile;
+    const isSuper=profile?.role==='superadmin';
+    document.querySelector('#account-label').textContent=isSuper?'Super Admin':'Proprietária';
+    document.querySelector('#account-avatar').textContent=isSuper?'JJ':'LV';
+    document.querySelector('#account-role').textContent=isSuper?'Super Admin':'Proprietária';
+    document.querySelector('#account-title').textContent=isSuper?'Acesso superior':'Acesso da proprietária';
+    document.querySelector('#account-description').textContent=isSuper
+      ?`Usuário conectado: ${profile.login}. Você pode administrar o acesso da proprietária.`
+      :`Conta conectada: ${profile.login}.`;
+    const ownerSection=document.querySelector('#owner-section');
+    ownerSection.style.display=isSuper?'block':'none';
+    if(isSuper){
+      const ownerExists=Boolean(profile.owner_login);
+      document.querySelector('#owner-form').style.display=ownerExists?'none':'grid';
+      document.querySelector('#owner-description').textContent=ownerExists
+        ?`A conta da proprietária já está cadastrada: ${profile.owner_login}`
+        :'Cadastre o e-mail e uma senha inicial para a dona da Delivery LV.';
+      document.querySelector('#owner-status').textContent='';
+      document.querySelector('#owner-status').className='account-status';
+    }
+    lucide.createIcons();
+  }
+
+  async function enterPanel(profile){
+    renderPanelProfile(profile);
+    document.querySelector('#login-screen').style.display='none';
+    document.querySelector('#panel-app').classList.add('authenticated');
+    try{
+      await initPanel();
+    }catch(error){
+      console.error('Erro ao iniciar painel:',error);
+      showToast('Erro ao iniciar painel');
+    }
+  }
+
+  async function clearPanelSession({serverLogout=false,message=''}={}){
+    if(serverLogout&&panelToken){
+      try{await panelAuth('logout')}catch(error){console.warn('Não foi possível encerrar a sessão no servidor:',error)}
+    }
+    if(ordersChannel){try{await db.removeChannel(ordersChannel)}catch(error){} ordersChannel=null}
+    if(ordersRefreshTimer){clearInterval(ordersRefreshTimer);ordersRefreshTimer=null}
+    panelToken='';
+    panelProfile=null;
+    localStorage.removeItem(PANEL_SESSION_KEY);
+    db=createPanelClient('');
+    document.querySelector('#account-modal').classList.remove('show');
+    showLogin(message);
+  }
+
+  document.querySelector('#login-form').onsubmit=async event=>{
+    event.preventDefault();
+    const typedLogin=document.querySelector('#login-user').value.trim();
+    const password=document.querySelector('#login-password').value;
+    const login=typedLogin||'jhonata';
+    const button=document.querySelector('#login-submit');
+    const status=document.querySelector('#login-message');
+    if(!password)return;
+    button.disabled=true;
+    status.textContent='Verificando acesso...';
+    status.className='auth-message';
+    try{
+      const result=await panelAuth('login',{login,password});
+      if(!result?.ok){
+        status.textContent=result?.message||'Usuário ou senha inválidos.';
+        return;
+      }
+      panelToken=result.token;
+      localStorage.setItem(PANEL_SESSION_KEY,panelToken);
+      db=createPanelClient(panelToken);
+      const me=await panelAuth('me');
+      if(!me?.ok)throw new Error(me?.message||'Não foi possível validar a sessão.');
+      status.textContent='';
+      await enterPanel(me);
+    }catch(error){
+      console.error('Erro no login:',error);
+      status.textContent='Não foi possível entrar agora. Verifique sua conexão e tente novamente.';
+    }finally{
+      button.disabled=false;
+    }
+  };
+
+  document.querySelector('#account-button').onclick=async()=>{
+    try{
+      const me=await panelAuth('me');
+      if(!me?.ok){await clearPanelSession({message:'Sua sessão terminou. Entre novamente.'});return}
+      renderPanelProfile(me);
+      document.querySelector('#account-modal').classList.add('show');
+      lucide.createIcons();
+    }catch(error){
+      console.error('Erro ao abrir conta:',error);
+      showToast('Não foi possível abrir sua conta');
+    }
+  };
+
+  document.querySelector('#close-account').onclick=()=>document.querySelector('#account-modal').classList.remove('show');
+  document.querySelector('#account-modal').addEventListener('click',event=>{if(event.target.id==='account-modal')event.currentTarget.classList.remove('show')});
+
+  document.querySelector('#owner-form').onsubmit=async event=>{
+    event.preventDefault();
+    const email=document.querySelector('#owner-email').value.trim();
+    const password=document.querySelector('#owner-password').value;
+    const status=document.querySelector('#owner-status');
+    const button=event.submitter;
+    if(!email||password.length<8)return;
+    button.disabled=true;
+    status.textContent='Criando acesso...';
+    status.className='account-status';
+    try{
+      const result=await panelAuth('create_owner',{login:email,newPassword:password});
+      status.textContent=result?.message||'Acesso atualizado.';
+      status.className=`account-status ${result?.ok?'ok':'error'}`;
+      if(result?.ok){
+        event.target.reset();
+        const me=await panelAuth('me');
+        if(me?.ok)renderPanelProfile(me);
+        document.querySelector('#owner-status').textContent=result.message;
+        document.querySelector('#owner-status').className='account-status ok';
+      }
+    }catch(error){
+      console.error('Erro ao cadastrar proprietária:',error);
+      status.textContent='Não foi possível cadastrar o acesso.';
+      status.className='account-status error';
+    }finally{button.disabled=false}
+  };
+
+  document.querySelector('#password-form').onsubmit=async event=>{
+    event.preventDefault();
+    const current=document.querySelector('#current-password').value;
+    const next=document.querySelector('#new-password').value;
+    const status=document.querySelector('#password-status');
+    const button=event.submitter;
+    if(!current||next.length<8)return;
+    button.disabled=true;
+    status.textContent='Alterando senha...';
+    status.className='account-status';
+    try{
+      const result=await panelAuth('change_password',{password:current,newPassword:next});
+      if(!result?.ok){
+        status.textContent=result?.message||'Não foi possível alterar a senha.';
+        status.className='account-status error';
+        return;
+      }
+      status.textContent=result.message;
+      status.className='account-status ok';
+      event.target.reset();
+      setTimeout(()=>clearPanelSession({message:'Senha alterada. Entre novamente com a nova senha.'}),700);
+    }catch(error){
+      console.error('Erro ao trocar senha:',error);
+      status.textContent='Não foi possível alterar a senha.';
+      status.className='account-status error';
+    }finally{button.disabled=false}
+  };
+
+  document.querySelector('#logout-button').onclick=()=>clearPanelSession({serverLogout:true});
+
+  async function boot(){
+    lucide.createIcons();
+    if(!panelToken){showLogin();return}
+    try{
+      db=createPanelClient(panelToken);
+      const me=await panelAuth('me');
+      if(!me?.ok){await clearPanelSession({message:'Entre novamente para acessar o painel.'});return}
+      await enterPanel(me);
+    }catch(error){
+      console.error('Erro ao restaurar sessão:',error);
+      await clearPanelSession({message:'Entre novamente para acessar o painel.'});
+    }
+  }
+  boot();
 </script>
 </body>
 </html>
