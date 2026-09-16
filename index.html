@@ -303,14 +303,35 @@
 window.LVAlerts=(()=>{
   const timers=new Map();let audioCtx=null;let swRegistration=null;
   const getAudio=()=>{try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;if(!audioCtx)audioCtx=new AC();if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});return audioCtx}catch(error){return null}};
-  function beep(){const ctx=getAudio();if(!ctx)return;try{const now=ctx.currentTime;const master=ctx.createGain();master.gain.setValueAtTime(.72,now);master.connect(ctx.destination);const bursts=[{t:0,f:880,d:.18},{t:.22,f:660,d:.18},{t:.44,f:1040,d:.22},{t:.72,f:660,d:.18},{t:.94,f:1120,d:.24}];bursts.forEach(({t,f,d},index)=>{const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type=index%2?'sawtooth':'square';osc.frequency.setValueAtTime(f,now+t);if(index===2)osc.frequency.linearRampToValueAtTime(1320,now+t+d);gain.gain.setValueAtTime(.0001,now+t);gain.gain.exponentialRampToValueAtTime(.48,now+t+.018);gain.gain.setValueAtTime(.48,now+t+Math.max(.03,d-.045));gain.gain.exponentialRampToValueAtTime(.0001,now+t+d);osc.connect(gain);gain.connect(master);osc.start(now+t);osc.stop(now+t+d+.02)});setTimeout(()=>{try{master.disconnect()}catch(error){}},1400)}catch(error){}}
-  function vibrate(){try{navigator.vibrate?.([260,120,260,120,420])}catch(error){}}
+  function beep(){
+    const ctx=getAudio();if(!ctx)return;
+    const tone=(freq,duration,delay=0)=>{
+      window.setTimeout(()=>{
+        try{
+          const now=ctx.currentTime;
+          const osc=ctx.createOscillator();
+          const gain=ctx.createGain();
+          osc.type='square';
+          osc.frequency.value=freq;
+          gain.gain.setValueAtTime(.0001,now);
+          gain.gain.exponentialRampToValueAtTime(.25,now+.02);
+          gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+          osc.connect(gain);gain.connect(ctx.destination);
+          osc.start();osc.stop(now+duration);
+        }catch(error){}
+      },delay);
+    };
+    tone(880,.25,0);
+    tone(1200,.25,300);
+    tone(880,.35,620);
+  }
+  function vibrate(){try{navigator.vibrate?.([300,120,300,120,500])}catch(error){}}
   async function ensureSw(){if(swRegistration)return swRegistration;if(!('serviceWorker' in navigator))return null;try{swRegistration=await navigator.serviceWorker.register('./notification-sw.js',{scope:'./'});return swRegistration}catch(error){console.warn('Service Worker de alerta indisponível',error);return null}}
   async function systemNotify(title,body,tag){if(!('Notification' in window)||Notification.permission!=='granted')return;try{const reg=await ensureSw();if(reg?.showNotification){await reg.showNotification(title,{body,tag,renotify:true,vibrate:[250,120,250],icon:'./icon-192.png'});return}new Notification(title,{body,tag})}catch(error){console.warn('Notificação do sistema indisponível',error)}}
   function banner(key,title,body){document.querySelectorAll('.lv-urgent-alert').forEach(node=>node.remove());const node=document.createElement('div');node.className='lv-urgent-alert';node.dataset.alertKey=key;node.innerHTML=`<div class="lv-urgent-alert-icon"><i data-lucide="bell-ring"></i></div><div class="lv-urgent-alert-copy"><strong>${String(title).replace(/[<>]/g,'')}</strong><span>${String(body).replace(/[<>]/g,'')}</span></div><button type="button" data-lv-alert-dismiss="${key}">OK</button>`;document.body.appendChild(node);window.lucide?.createIcons()}
   function pulse(title,body,tag,withSystem=false){beep();vibrate();if(withSystem)systemNotify(title,body,tag)}
   function stop(key){const timer=timers.get(key);if(timer)clearInterval(timer);timers.delete(key);document.querySelector(`.lv-urgent-alert[data-alert-key="${CSS.escape(key)}"]`)?.remove()}
-  function start(key,title,body,{repeats=8,interval=6000}={}){stop(key);banner(key,title,body);pulse(title,body,key,true);let count=1;const timer=setInterval(()=>{count+=1;if(count>repeats){stop(key);return}pulse(title,body,key,false)},interval);timers.set(key,timer)}
+  function start(key,title,body,{repeats=1200,interval=3000}={}){stop(key);banner(key,title,body);pulse(title,body,key,true);let count=1;const timer=setInterval(()=>{count+=1;if(count>repeats){stop(key);return}pulse(title,body,key,false)},interval);timers.set(key,timer)}
   function updateButtons(){const granted=('Notification' in window)&&Notification.permission==='granted';document.querySelectorAll('[data-enable-alerts]').forEach(button=>{button.classList.toggle('alerts-on',granted);const span=button.querySelector('span');if(span)span.textContent=granted?'Alertas ativos':'Ativar alertas';button.title=granted?'Som, vibração e notificações ativados':'Ativar som, vibração e notificações'})}
   async function enable(){getAudio();await ensureSw();if('Notification' in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch(error){}}updateButtons();beep();vibrate()}
   document.addEventListener('pointerdown',()=>getAudio(),{once:true,capture:true});
@@ -356,7 +377,7 @@ window.LVAlerts=(()=>{
   function canConfirmPayment(order){return order.paymentStatus!=='paid'&&((order.status==='delivery'&&(!order.deliveryCodeRequired||!!order.deliveryVerifiedAt))||(order.status==='ready'&&(order.type==='Retirada no balcão'||order.type==='Comer no local')))}
   function normalizeStatus(status){const value=String(status||'').toLowerCase();if(['1','new','pending','novo','awaiting_confirmation'].includes(value))return'new';if(['accepted','aceito'].includes(value))return'accepted';if(['2','preparing','in_preparation','prep','em_preparo'].includes(value))return'prep';if(['3','ready','pronto','out_for_delivery','delivering','delivered'].includes(value))return value==='ready'||value==='pronto'?'ready':'delivery';if(['4','completed','done','finalizado'].includes(value))return'done';if(['cancelled','canceled','rejected','recusado','cancelado'].includes(value))return'cancelled';return'new'}
   function normalizeOrder(row,items=[]){const type=normalizeOrderType(row.order_type),paymentStatus=String(row.payment_status||'pending').toLowerCase(),rawStatus=normalizeStatus(row.status);let status=rawStatus;if(rawStatus==='done'&&paymentStatus!=='paid')status=type==='Entrega'?'delivery':'ready';return{id:row.id,customer:row.customer_name||'Cliente não informado',createdAt:row.created_at||Date.now(),minutes:Math.max(0,Math.floor((Date.now()-new Date(row.created_at||Date.now()).getTime())/60000)),status,rawStatus,time:new Date(row.created_at||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),type,payment:row.payment_method||'A confirmar',paymentStatus,paidAt:row.paid_at||null,orderCode:row.order_code||'',deliveryCodeRequired:Boolean(row.delivery_code_required),deliveryVerifiedAt:row.delivery_verified_at||null,total:Number(row.total||0),items}}
-  async function loadRealOrders({notify=true}={}){const{data,error}=await db.from('orders').select('id,order_code,customer_name,order_type,payment_method,payment_status,paid_at,status,total,delivery_code_required,delivery_verified_at,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});if(error){console.error('Erro ao carregar pedidos:',error);showToast('Erro ao carregar pedidos');return}const{data:itemRows,error:itemError}=await db.from('order_items').select('*');if(itemError){console.error('Erro ao carregar itens:',itemError);showToast('Erro ao carregar itens dos pedidos');return}const{data:products,error:productError}=await db.from('products').select('id,name,base_price');if(productError){console.error('Erro ao carregar produtos:',productError);showToast('Erro ao carregar produtos');return}const productMap=new Map((products||[]).map(product=>[product.id,product]));const nextOrders=(data||[]).map(row=>normalizeOrder(row,(itemRows||[]).filter(item=>item.order_id===row.id).map(item=>{const product=productMap.get(item.product_id)||{};return{qty:Number(item.qty||1),name:product.name||'Item',detail:[item.size,item.edge,item.note,item.detail].filter(Boolean).join(' · '),price:Number(product.base_price||0)}})));const nextIds=new Set(nextOrders.map(order=>String(order.id)));const fresh=notify?nextOrders.filter(order=>!knownOrderIds.has(String(order.id))&&order.status==='new'):[];orders=nextOrders;knownOrderIds=nextIds;render();renderFinance();if(fresh.length){const latest=fresh[0];document.querySelector('#notification-text').textContent=`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer} chegou agora.`;const notice=document.querySelector('#notification');notice.classList.remove('show');void notice.offsetWidth;notice.classList.add('show');window.LVAlerts?.start('admin-new-order','Novo pedido recebido',`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer}`,{repeats:8,interval:6000});}}
+  async function loadRealOrders({notify=true}={}){const{data,error}=await db.from('orders').select('id,order_code,customer_name,order_type,payment_method,payment_status,paid_at,status,total,delivery_code_required,delivery_verified_at,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});if(error){console.error('Erro ao carregar pedidos:',error);showToast('Erro ao carregar pedidos');return}const{data:itemRows,error:itemError}=await db.from('order_items').select('*');if(itemError){console.error('Erro ao carregar itens:',itemError);showToast('Erro ao carregar itens dos pedidos');return}const{data:products,error:productError}=await db.from('products').select('id,name,base_price');if(productError){console.error('Erro ao carregar produtos:',productError);showToast('Erro ao carregar produtos');return}const productMap=new Map((products||[]).map(product=>[product.id,product]));const nextOrders=(data||[]).map(row=>normalizeOrder(row,(itemRows||[]).filter(item=>item.order_id===row.id).map(item=>{const product=productMap.get(item.product_id)||{};return{qty:Number(item.qty||1),name:product.name||'Item',detail:[item.size,item.edge,item.note,item.detail].filter(Boolean).join(' · '),price:Number(product.base_price||0)}})));const nextIds=new Set(nextOrders.map(order=>String(order.id)));const fresh=notify?nextOrders.filter(order=>!knownOrderIds.has(String(order.id))&&order.status==='new'):[];orders=nextOrders;knownOrderIds=nextIds;render();renderFinance();if(fresh.length){const latest=fresh[0];document.querySelector('#notification-text').textContent=`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer} chegou agora.`;const notice=document.querySelector('#notification');notice.classList.remove('show');void notice.offsetWidth;notice.classList.add('show');window.LVAlerts?.start('admin-new-order','Novo pedido recebido',`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer}`,{repeats:1200,interval:3000});}}
   function subscribeToOrders(){if(ordersChannel)return;ordersChannel=db.channel('orders-realtime').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>loadRealOrders()).subscribe(status=>{if(status==='CHANNEL_ERROR')console.error('Erro no Realtime de pedidos')});}
   function startOrdersRefresh(){if(ordersRefreshTimer)return;ordersRefreshTimer=window.setInterval(()=>loadRealOrders(),5000)}
   let menuProducts=[],menuCategories=[],menuProductSizes=[],menuPizzaSizes=[];
@@ -1233,7 +1254,7 @@ window.LVAlerts=(()=>{
     const availableRows=rows.filter(order=>!order.driver_id&&['ready','delivered','out_for_delivery','delivery'].includes(String(order.status)));
     const freshAvailable=availableRows.filter(order=>!driverKnownAvailableIds.has(String(order.id)));
     driverOrders=rows;renderDriverOrders();driverKnownAvailableIds=new Set(availableRows.map(order=>String(order.id)));
-    if((driverAlertsReady||freshAvailable.length)&&freshAvailable.length){const latest=freshAvailable[0];window.LVAlerts?.start('driver-new-delivery','Nova entrega disponível',`Pedido #${latest.id} · ${latest.order_code||''} · ${latest.customer_name||'Cliente'}`,{repeats:10,interval:6000})}
+    if((driverAlertsReady||freshAvailable.length)&&freshAvailable.length){const latest=freshAvailable[0];window.LVAlerts?.start('driver-new-delivery','Nova entrega disponível',`Pedido #${latest.id} · ${latest.order_code||''} · ${latest.customer_name||'Cliente'}`,{repeats:1200,interval:3000})}
     driverAlertsReady=true;
   }
   async function enterDriver(profile){
@@ -1404,7 +1425,7 @@ window.LVAlerts=(()=>{
     document.querySelector('#lv-server-alert-title').textContent=data.title||'Delivery LV';
     document.querySelector('#lv-server-alert-body').textContent=data.body||'Existe um alerta que precisa de atenção.';
     banner?.classList.add('show');
-    if(!same)window.LVAlerts?.start?.('server-push',data.title||'Novo alerta',data.body||'Delivery LV',{repeats:120,interval:5000});
+    if(!same)window.LVAlerts?.start?.('server-push',data.title||'Novo alerta',data.body||'Delivery LV',{repeats:1200,interval:3000});
     if(window.lucide)lucide.createIcons();
   }
   async function stopCurrent(){
