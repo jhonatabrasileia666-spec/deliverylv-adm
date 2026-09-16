@@ -1,0 +1,52 @@
+name: Fix mobile account button
+
+on:
+  push:
+    branches:
+      - fix-mobile-account-button
+    paths:
+      - '.github/workflows/fix-mobile-account-button.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Keep account avatar visible on mobile
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = '.top-status,.demo-pill,.user span{display:none}'
+          new = '.top-status,.demo-pill,#account-label{display:none}'
+
+          if old not in text:
+              raise SystemExit('mobile account CSS marker not found')
+
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+
+          if old in text:
+              raise SystemExit('old mobile account rule still present')
+          if new not in text:
+              raise SystemExit('new mobile account rule missing')
+          print('mobile account button fixed')
+          PY
+
+      - name: Commit fix to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'fix: show account button on mobile'
+          git push origin HEAD:main
