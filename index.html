@@ -190,6 +190,15 @@
       .nav-item{position:relative}
     }
   </style>
+
+  <style id="switch-access-button-styles">
+    #switch-login-button{white-space:nowrap}
+    @media(max-width:700px){
+      #switch-login-button{min-height:36px;padding:0 9px;font-size:9px}
+      #switch-login-button svg{width:14px;height:14px}
+      .top-right{gap:6px}
+    }
+  </style>
 </head>
 <body>
 
@@ -1102,6 +1111,13 @@
     userInput.value='';passwordInput.value='';document.querySelector('#login-message').textContent='';
   }
   modeBar.addEventListener('click',event=>{const button=event.target.closest('[data-login-mode]');if(button)setLoginMode(button.dataset.loginMode)});
+  const switchLoginButton=document.querySelector('#switch-login-button');
+  if(switchLoginButton){
+    switchLoginButton.onclick=async()=>{
+      await clearPanelSession({serverLogout:true,message:'Escolha como deseja entrar.'});
+      setLoginMode('admin');
+    };
+  }
 
   const originalOpenDriverEditor=openDriverEditor;
   openDriverEditor=function(id=null){
