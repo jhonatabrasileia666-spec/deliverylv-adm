@@ -1,0 +1,42 @@
+name: Apply driver history and alerts
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/add_driver_history_alerts.py'
+      - '.github/workflows/apply-driver-history-alerts.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch admin and driver alerts
+        run: python .github/scripts/add_driver_history_alerts.py
+      - name: Validate features
+        run: |
+          grep -q 'id="driver-history-orders"' index.html
+          grep -q 'data-enable-alerts' index.html
+          grep -q 'driver-new-delivery' index.html
+          grep -q 'admin-new-order' index.html
+          grep -q 'notification-sw.js' index.html
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text(encoding='utf-8')
+          for script_id in ['lv-alert-module','driver-login-module']:
+              m=re.search(rf'<script id="{script_id}">(.*?)</script>',s,re.S)
+              if not m: raise SystemExit(f'missing {script_id}')
+              Path(f'/tmp/{script_id}.js').write_text(m.group(1),encoding='utf-8')
+          PY
+          node --check /tmp/lv-alert-module.js
+          node --check /tmp/driver-login-module.js
+      - name: Commit final change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/scripts/add_driver_history_alerts.py .github/workflows/apply-driver-history-alerts.yml
+          git add -A
+          git commit -m "feat: add driver history and live alerts"
+          git push
