@@ -16,8 +16,9 @@ jobs:
         run: python .github/scripts/add_switch_access_button.py
       - name: Validate switch access
         run: |
-          grep -q 'id="switch-access-button"' index.html
+          grep -q 'id="switch-login-button"' index.html
           grep -q 'Trocar acesso' index.html
+          grep -q "switchLoginButton.onclick" index.html
           grep -q "clearPanelSession({serverLogout:true" index.html
       - name: Commit final change
         run: |
@@ -25,5 +26,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f .github/scripts/add_switch_access_button.py .github/workflows/apply-switch-access-button.yml
           git add -A
-          git commit -m "feat: add switch access button"
+          git commit -m "feat: make switching login explicit"
           git push
