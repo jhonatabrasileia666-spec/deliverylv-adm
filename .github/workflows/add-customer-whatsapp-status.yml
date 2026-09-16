@@ -1,0 +1,59 @@
+name: Add customer WhatsApp status notification
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-customer-whatsapp-status.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch admin status WhatsApp flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('index.html')
+          text=path.read_text(encoding='utf-8')
+          old="""  async function updateStatus(id,next){const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'delivered',cancelled:'cancelled'}[next];if(!status)return;const{error}=await db.from('orders').update({status}).eq('id',id);if(error){console.error('Erro ao atualizar pedido:',error);showToast(`Erro ao atualizar pedido: ${error.message||'verifique as permissões'}`);return}await loadRealOrders({notify:false});showToast(next==='cancelled'?'Pedido recusado':'Pedido atualizado')}"""
+          new="""  function customerWhatsAppNumber(phone){let digits=String(phone||'').replace(/\\D/g,'');if(!digits)return'';if(digits.startsWith('55')&&digits.length>=12)return digits;if(digits.length===10||digits.length===11)return'55'+digits;if(digits.length===8||digits.length===9)return'5568'+digits;return digits}
+  function customerStatusWhatsApp(order,next){if(!order)return null;const shouldNotifyPickup=next==='ready'&&order.type==='Retirada no balcão';const shouldNotifyDelivery=next==='delivery'&&order.type==='Entrega';if(!shouldNotifyPickup&&!shouldNotifyDelivery)return null;const phone=customerWhatsAppNumber(order.phone);if(!phone)return null;const firstName=String(order.customer||'Cliente').trim().split(/\\s+/)[0]||'Cliente';const code=order.orderCode?`#${order.orderCode}`:`#${order.id}`;const message=shouldNotifyPickup?`Olá, ${firstName}! Seu pedido ${code} da Delivery LV está pronto para retirada. Pode vir buscar!`:`Olá, ${firstName}! Seu pedido ${code} da Delivery LV saiu para entrega e já está a caminho!`;return`https://wa.me/${phone}?text=${encodeURIComponent(message)}`}
+  function openCustomerStatusWhatsApp(order,next){const url=customerStatusWhatsApp(order,next);if(!url)return false;const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)window.location.href=url;return true}
+  async function updateStatus(id,next){const order=orders.find(item=>String(item.id)===String(id));const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'delivered',cancelled:'cancelled'}[next];if(!status)return;const{error}=await db.from('orders').update({status}).eq('id',id);if(error){console.error('Erro ao atualizar pedido:',error);showToast(`Erro ao atualizar pedido: ${error.message||'verifique as permissões'}`);return}await loadRealOrders({notify:false});const whatsappOpened=openCustomerStatusWhatsApp(order,next);showToast(next==='cancelled'?'Pedido recusado':whatsappOpened?'Pedido atualizado · WhatsApp aberto':'Pedido atualizado')}"""
+          count=text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected updateStatus once, found {count}')
+          text=text.replace(old,new,1)
+          path.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate inline JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re,subprocess
+          text=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',text,re.S|re.I)
+          for i,code in enumerate(scripts):
+              if not code.strip(): continue
+              tmp=Path(f'/tmp/admin-{i}.js')
+              tmp.write_text(code,encoding='utf-8')
+              subprocess.run(['node','--check',str(tmp)],check=True)
+          print('Inline JavaScript valid')
+          PY
+      - name: Commit feature and remove temporary workflow
+        run: |
+          rm -f .github/workflows/add-customer-whatsapp-status.yml
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: open customer WhatsApp on order status updates'
+          git push
