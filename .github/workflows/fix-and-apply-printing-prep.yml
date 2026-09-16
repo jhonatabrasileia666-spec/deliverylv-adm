@@ -1,0 +1,54 @@
+name: Fix and apply hidden printing preparation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-and-apply-printing-prep.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Fix patch markers
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/scripts/add-printing-prep.py')
+          lines=p.read_text(encoding='utf-8').splitlines()
+          out=[]
+          for line in lines:
+              if line.startswith('old_close = '):
+                  line = '''old_close = '<button class="button secondary" data-close-modal>Fechar</button>' '''.rstrip()
+              elif line.startswith('new_close = '):
+                  line = '''new_close = '<button class="button secondary" data-action="print-order" data-id="${order.id}"><i data-lucide="printer"></i>Imprimir pedido</button><button class="button secondary" data-close-modal>Fechar</button>' '''.rstrip()
+              elif line.strip() == "'data-action=\\\\\"print-order\\\\\"',":
+                  line = "    'data-action=\"print-order\"',"
+              out.append(line)
+          p.write_text('\n'.join(out)+'\n',encoding='utf-8')
+          PY
+      - name: Apply printing preparation
+        run: python .github/scripts/add-printing-prep.py
+      - name: Validate result
+        run: |
+          grep -q 'id="lv-printing-module"' index.html
+          grep -q 'autoPrintEnabled:false' index.html
+          grep -q 'rawBtEnabled:false' index.html
+          grep -q "rawBtPackage:'ru.a402d.rawbtprinter'" index.html
+          grep -q 'data-action="print-order"' index.html
+          grep -q 'item.quantity||item.qty||1' index.html
+          grep -q 'customer_phone,address' index.html
+      - name: Commit patched panel and remove temporary automation
+        run: |
+          rm -f .github/scripts/add-printing-prep.py .github/workflows/apply-printing-prep.yml .github/workflows/fix-and-apply-printing-prep.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: prepare manual and hidden automatic printing'
+          git push
