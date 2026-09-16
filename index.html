@@ -996,7 +996,10 @@ window.LVAlerts=(()=>{
       const{error:deleteSizesError}=await db.from('product_sizes').delete().eq('product_id',createdId);
       if(deleteSizesError)throw deleteSizesError;
       if(pricingMode==='sizes'){
-        const rows=sizes.map(size=>({...size,product_id:createdId}));
+        const savedCategory=menuCategories.find(entry=>String(entry.id)===String(categoryId));
+        const isPizza=String(savedCategory?.slug||'').toLowerCase()==='pizzas';
+        const pizzaSizeNames={P:'Pequena',M:'Média',G:'Grande'};
+        const rows=sizes.map(size=>({...size,name:isPizza?(pizzaSizeNames[size.name]||size.name):size.name,product_id:createdId}));
         const{error:sizeError}=await db.from('product_sizes').insert(rows);
         if(sizeError)throw sizeError;
       }
