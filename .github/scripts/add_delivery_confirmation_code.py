@@ -9,13 +9,13 @@ new="function needsDeliveryConfirmation(order){return order.status==='delivery'&
 if old not in s: raise SystemExit('canConfirmPayment marker not found')
 s=s.replace(old,new,1)
 
-old="total:Number(row.total||0),items}}"
-new="total:Number(row.total||0),deliveryCodeRequired:Boolean(row.delivery_code_required),deliveryVerifiedAt:row.delivery_verified_at||null,items}}"
+old="paymentStatus,paidAt:row.paid_at||null,deliveryCode:row.delivery_code||null,total:Number(row.total||0),items}}"
+new="paymentStatus,paidAt:row.paid_at||null,deliveryCodeRequired:Boolean(row.delivery_code_required),deliveryVerifiedAt:row.delivery_verified_at||null,total:Number(row.total||0),items}}"
 if old not in s: raise SystemExit('normalize marker not found')
 s=s.replace(old,new,1)
 
-old=".select('id,customer_name,order_type,payment_method,payment_status,paid_at,status,total,created_at')"
-new=".select('id,customer_name,order_type,payment_method,payment_status,paid_at,status,total,created_at,delivery_code_required,delivery_verified_at')"
+old=".select('id,customer_name,order_type,payment_method,payment_status,paid_at,status,total,delivery_code,created_at')"
+new=".select('id,customer_name,order_type,payment_method,payment_status,paid_at,status,total,delivery_code_required,delivery_verified_at,created_at')"
 if old not in s: raise SystemExit('orders select marker not found')
 s=s.replace(old,new,1)
 
@@ -27,8 +27,8 @@ order_card=r'''  function orderCard(order){
 s,count=re.subn(r"  function orderCard\(order\)\{.*?\n  function boardColumn",order_card+"  function boardColumn",s,count=1,flags=re.S)
 if count!=1: raise SystemExit('orderCard replacement failed')
 
-old="async function confirmPayment(id){"
-validate=r'''async function validateDeliveryCode(id){
+old="  async function confirmPayment(id){"
+validate=r'''  async function validateDeliveryCode(id){
     const order=orders.find(item=>item.id===id);if(!order||!needsDeliveryConfirmation(order))return;
     const raw=window.prompt(`Pedido #${id}\nDigite o código de entrega de 4 dígitos informado pelo cliente:`);
     if(raw===null)return;
