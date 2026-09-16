@@ -215,7 +215,7 @@
     </div>
   </section>
   <div class="app" id="panel-app">
-    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
+    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="button secondary small" id="switch-login-button" type="button"><i data-lucide="log-in"></i>Trocar acesso</button><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
     <div class="layout">
       <aside class="sidebar"><div class="nav-label">Operação</div><nav class="nav"><button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Visão geral</span></button><button class="nav-item" data-view="orders"><i data-lucide="inbox"></i><span>Pedidos</span><b class="nav-count" id="new-count">2</b></button><button class="nav-item" data-view="menu"><i data-lucide="book-open"></i><span>Cardápio</span></button><button class="nav-item" data-view="drivers"><i data-lucide="bike"></i><span>Entregadores</span></button><button class="nav-item" data-view="history"><i data-lucide="archive"></i><span>Histórico</span></button></nav><div class="sidebar-bottom">Central local de pedidos<br><strong>Atualizado agora</strong></div></aside>
       <main class="main">
@@ -764,6 +764,7 @@
   };
 
   document.querySelector('#logout-button').onclick=()=>clearPanelSession({serverLogout:true});
+  document.querySelector('#switch-login-button').onclick=async()=>{await clearPanelSession({serverLogout:true,message:'Escolha como deseja entrar.'});document.querySelector('[data-login-mode="admin"]')?.click();};
 
   async function boot(){
     lucide.createIcons();
@@ -1052,7 +1053,7 @@
 <section class="driver-app" id="driver-app">
   <header class="driver-topbar">
     <div class="driver-topbar-copy"><strong>Delivery LV</strong><span id="driver-profile-label">Área do entregador</span></div>
-    <button class="button secondary small" id="driver-logout" type="button"><i data-lucide="log-out"></i>Sair</button>
+    <button class="button secondary small" id="driver-logout" type="button"><i data-lucide="arrow-left-right"></i>Trocar acesso</button>
   </header>
   <main class="driver-main">
     <div class="driver-hero"><div><span class="eyebrow">Central de entregas</span><h1>Minhas entregas</h1><p>Veja pedidos disponíveis e acompanhe as entregas que você pegou.</p></div><button class="button secondary" id="driver-refresh" type="button"><i data-lucide="refresh-cw"></i>Atualizar</button></div>
@@ -1164,7 +1165,7 @@
     if(driverToken){try{await driverAuth('logout')}catch(error){}}
     if(driverRefreshTimer){clearInterval(driverRefreshTimer);driverRefreshTimer=null}driverToken='';driverProfile=null;driverOrders=[];localStorage.removeItem(DRIVER_SESSION_KEY);driverDb=createDriverClient('');document.querySelector('#driver-app').classList.remove('authenticated');showLogin(message);setLoginMode('driver');
   }
-  document.querySelector('#driver-logout').onclick=()=>clearDriverSession();document.querySelector('#driver-refresh').onclick=()=>loadDriverOrders();
+  document.querySelector('#driver-logout').onclick=async()=>{await clearDriverSession('Escolha como deseja entrar.');document.querySelector('[data-login-mode="admin"]')?.click();};document.querySelector('#driver-refresh').onclick=()=>loadDriverOrders();
   document.querySelector('#driver-app').addEventListener('click',async event=>{
     const button=event.target.closest('[data-driver-action]');if(!button)return;const orderId=Number(button.dataset.orderId);button.disabled=true;
     try{
