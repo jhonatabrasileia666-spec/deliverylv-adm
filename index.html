@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#11100f">
+  <meta name="application-name" content="Delivery LV">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Delivery LV">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./pwa-icon-192.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./pwa-icon-192.svg">
   <title>Delivery LV | Central de pedidos</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -199,6 +207,12 @@
       .top-right{gap:6px}
     }
   </style>
+
+<style id="pwa-install-styles">
+  .pwa-install-button{position:fixed;z-index:80;right:16px;bottom:84px;display:none;align-items:center;gap:8px;min-height:44px;padding:0 15px;border:1px solid #ff5a1670;border-radius:11px;background:#ff5a16;color:#1b110b;box-shadow:0 14px 34px #0008;font-size:11px;font-weight:900}
+  .pwa-install-button.show{display:inline-flex}.pwa-install-button svg{width:16px;height:16px}
+  @media(min-width:701px){.pwa-install-button{bottom:22px}}
+</style>
 </head>
 <body>
 
@@ -1267,6 +1281,42 @@ window.LVAlerts=(()=>{
     try{driverDb=createDriverClient(driverToken);const me=await driverAuth('me');if(!me?.ok){await clearDriverSession('Entre novamente para acessar suas entregas.');return}await enterDriver(me)}catch(error){console.error('Erro ao restaurar entregador:',error);await clearDriverSession('Entre novamente para acessar suas entregas.')}
   }
   restoreDriver();
+})();
+</script>
+
+<button class="pwa-install-button" id="pwa-install-button" type="button" aria-label="Instalar aplicativo"><i data-lucide="download"></i><span>Instalar aplicativo</span></button>
+<script id="panel-pwa-module">
+(()=>{
+  const installButton=document.querySelector('#pwa-install-button');
+  let deferredInstallPrompt=null;
+  const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  const refreshInstallButton=()=>{if(!installButton)return;installButton.classList.toggle('show',Boolean(deferredInstallPrompt)&&!standalone());if(window.lucide)lucide.createIcons()};
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('./notification-sw.js',{scope:'./'}).catch(error=>console.error('Erro ao registrar PWA:',error));
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt',event=>{
+    event.preventDefault();
+    deferredInstallPrompt=event;
+    refreshInstallButton();
+  });
+
+  installButton?.addEventListener('click',async()=>{
+    if(!deferredInstallPrompt)return;
+    installButton.disabled=true;
+    try{
+      await deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt=null;
+      refreshInstallButton();
+    }finally{installButton.disabled=false}
+  });
+
+  window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;refreshInstallButton()});
+  refreshInstallButton();
 })();
 </script>
 
