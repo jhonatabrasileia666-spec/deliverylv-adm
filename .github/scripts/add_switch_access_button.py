@@ -3,24 +3,22 @@ from pathlib import Path
 p=Path('index.html')
 s=p.read_text(encoding='utf-8')
 
-old='<div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div>'
-new='<div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="button secondary small" id="switch-access-button" type="button"><i data-lucide="repeat-2"></i>Trocar acesso</button><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div>'
-if old not in s: raise SystemExit('admin topbar marker not found')
-s=s.replace(old,new,1)
+# The admin header already has switch-login-button and the driver header already has Trocar acesso.
+# Only wire the admin button to close its current session and return to the central login screen.
+if 'id="switch-login-button"' not in s:
+    raise SystemExit('existing admin switch-login-button not found')
+if 'id="driver-logout"' not in s:
+    raise SystemExit('driver switch button not found')
 
-old='<button class="button secondary small" id="driver-logout" type="button"><i data-lucide="log-out"></i>Sair</button>'
-new='<button class="button secondary small" id="driver-logout" type="button"><i data-lucide="repeat-2"></i>Trocar acesso</button>'
-if old not in s: raise SystemExit('driver logout marker not found')
-s=s.replace(old,new,1)
+marker="  modeBar.addEventListener('click',event=>{const button=event.target.closest('[data-login-mode]');if(button)setLoginMode(button.dataset.loginMode)});"
+insert="""  modeBar.addEventListener('click',event=>{const button=event.target.closest('[data-login-mode]');if(button)setLoginMode(button.dataset.loginMode)});\n  const switchLoginButton=document.querySelector('#switch-login-button');\n  if(switchLoginButton){\n    switchLoginButton.onclick=async()=>{\n      await clearPanelSession({serverLogout:true,message:'Escolha como deseja entrar.'});\n      setLoginMode('admin');\n    };\n  }"""
+if marker not in s:
+    raise SystemExit('login mode marker not found')
+s=s.replace(marker,insert,1)
 
-marker="  document.querySelector('#account-button').onclick=async()=>{"
-insert="  document.querySelector('#switch-access-button').onclick=()=>clearPanelSession({serverLogout:true,message:'Escolha o acesso que deseja usar.'});\n\n"
-if marker not in s: raise SystemExit('account button marker not found')
-s=s.replace(marker,insert+marker,1)
-
-style='''\n  <style id="switch-access-button-styles">\n    #switch-access-button{white-space:nowrap}\n    @media(max-width:700px){\n      #switch-access-button{min-height:36px;padding:0 9px;font-size:9px}\n      #switch-access-button svg{width:14px;height:14px}\n      .top-right{gap:6px}\n    }\n  </style>\n'''
+style='''\n  <style id="switch-access-button-styles">\n    #switch-login-button{white-space:nowrap}\n    @media(max-width:700px){\n      #switch-login-button{min-height:36px;padding:0 9px;font-size:9px}\n      #switch-login-button svg{width:14px;height:14px}\n      .top-right{gap:6px}\n    }\n  </style>\n'''
 if 'switch-access-button-styles' not in s:
     s=s.replace('</head>',style+'</head>',1)
 
 p.write_text(s,encoding='utf-8')
-print('switch access button patched')
+print('existing switch access button wired')
