@@ -1,0 +1,46 @@
+name: Aplicar login protegido
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.deploy/login-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-login:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+
+      - name: Aplicar alteracao no index
+        run: python .deploy/apply_login.py
+
+      - name: Validar HTML e JavaScript
+        run: |
+          git diff --check
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('index.html').read_text()
+          assert 'id="login-screen"' in s
+          assert "const login=typedLogin||'jhonata';" in s
+          assert 'id="panel-app"' in s
+          start=s.rfind('<script>')+len('<script>')
+          end=s.rfind('</script>')
+          Path('.deploy/check.js').write_text(s[start:end])
+          PY
+          node --check .deploy/check.js
+          rm -f .deploy/check.js
+
+      - name: Publicar index e limpar arquivos temporarios
+        run: |
+          rm -f .deploy/apply_login.py .deploy/login-trigger .github/workflows/apply-login.yml
+          rmdir .deploy 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Adicionar login protegido ao painel"
+          git push
