@@ -1,0 +1,40 @@
+name: Apply background push client
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/add_background_push_client.py'
+      - '.github/workflows/apply-background-push-client.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch background push client
+        run: python .github/scripts/add_background_push_client.py
+      - name: Validate push client
+        run: |
+          grep -q 'lv-background-push-module' index.html
+          grep -q 'lv_push_subscribe' index.html
+          grep -q 'Parar alerta' index.html
+          grep -q 'PushManager' index.html
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+          s=Path('index.html').read_text(encoding='utf-8')
+          m=re.search(r'<script id="lv-background-push-module">(.*?)</script>',s,re.S)
+          assert m, 'push module missing'
+          with tempfile.NamedTemporaryFile('w',suffix='.js',delete=False,encoding='utf-8') as f:
+              f.write(m.group(1)); name=f.name
+          subprocess.run(['node','--check',name],check=True)
+          PY
+      - name: Commit final change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/scripts/add_background_push_client.py .github/workflows/apply-background-push-client.yml
+          git add -A
+          git commit -m "feat: enable background web push alerts"
+          git push
