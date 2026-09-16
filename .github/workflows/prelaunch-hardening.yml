@@ -26,13 +26,15 @@ jobs:
           text=text.replace('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0')
           if '<meta name="robots"' not in text:
               text=text.replace('<meta name="viewport" content="width=device-width, initial-scale=1">','<meta name="viewport" content="width=device-width, initial-scale=1">\n  <meta name="robots" content="noindex,nofollow,noarchive">',1)
-          old=".map(value=>`\\\"${String(value).replaceAll('\\\"','\\\"\\\"')}\\\"`).join(',')"
-          new=".map(value=>{const raw=String(value),safe=/^[=+\\-@]/.test(raw)?\"'\"+raw:raw;return `\\\"${safe.replaceAll('\\\"','\\\"\\\"')}\\\"`}).join(',')"
+          old='''.map(value=>`"${String(value).replaceAll('"','""')}"`).join(',')'''
+          new='''.map(value=>{const raw=String(value),safe=/^[=+\\-@]/.test(raw)?"'"+raw:raw;return `"${safe.replaceAll('"','""')}"`}).join(',')'''
           if old not in text:
               raise SystemExit('CSV export cell encoder not found')
           text=text.replace(old,new,1)
-          if 'lucide@latest' in text or '@supabase/supabase-js@2\"' in text:
-              raise SystemExit('Unpinned browser dependency remains')
+          if 'lucide@latest' in text:
+              raise SystemExit('Unpinned Lucide dependency remains')
+          if 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"' in text:
+              raise SystemExit('Unpinned Supabase dependency remains')
           path.write_text(text,encoding='utf-8')
           PY
       - name: Validate inline JavaScript
