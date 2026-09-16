@@ -693,7 +693,7 @@
     const form=event.currentTarget,button=form.querySelector('button[type="submit"]');
     const categoryChoice=document.querySelector('#edit-product-category')?.value||'';
     let categoryId=categoryChoice;
-    const newCategoryName=document.querySelector('#edit-new-category')?.value.trim()||'';
+    const newCategoryName=(document.querySelector('#edit-product-new-category')||document.querySelector('#edit-new-category'))?.value.trim()||'';
     const name=document.querySelector('#edit-product-name')?.value.trim()||'';
     const description=document.querySelector('#edit-product-description')?.value.trim()||'';
     const pricingMode=document.querySelector('#edit-product-pricing')?.value||'fixed';
