@@ -1,0 +1,23 @@
+name: Apply product editor
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-product-editor.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply product editor patch
+        run: python3 .github/scripts/enable_product_editor.py
+      - name: Commit product editor
+        run: |
+          rm .github/workflows/apply-product-editor.yml .github/scripts/enable_product_editor.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/apply-product-editor.yml .github/scripts/enable_product_editor.py
+          git diff --cached --check
+          git commit -m "feat: make admin menu products editable"
+          git push
