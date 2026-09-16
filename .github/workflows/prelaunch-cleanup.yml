@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   cleanup:
-    if: github.event.head_commit.message == 'chore: run prelaunch cleanup'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +26,6 @@ jobs:
           text = path.read_text(encoding='utf-8')
           original = text
 
-          # Remove the hidden fake-receipt test helper from production.
           text, removed = re.subn(
               r"\n  function testHidden\(\)\{.*?\n  \}\n\n  // Detect only genuinely new orders",
               "\n\n  // Detect only genuinely new orders",
@@ -37,18 +35,15 @@ jobs:
           )
           if removed != 1:
               raise SystemExit('Expected hidden print test helper was not found exactly once')
+
           text = text.replace(
               'window.LVPrinting={config:CONFIG,printNormal,buildReceipt,retryQueue,testHidden,_queue:queue};',
               'window.LVPrinting={config:CONFIG,printNormal,buildReceipt,retryQueue,_queue:queue};'
           )
-
-          # Remove demo-only styling left from the prototype phase.
           text = re.sub(r'\.demo-pill\{[^}]*\}\.demo-pill i\{[^}]*\}', '', text, count=1)
           text = re.sub(r'\.demo-controls\{[^}]*\}\.demo-controls p\{[^}]*\}\.demo-controls strong\{[^}]*\}', '', text, count=1)
           text = text.replace('.demo-controls{align-items:flex-start;flex-direction:column}.demo-controls .button{width:100%}', '')
           text = text.replace('.top-status,.demo-pill,#account-label{display:none}', '.top-status,#account-label{display:none}')
-
-          # Production copy / navigation cleanup.
           text = text.replace('Pedido #1047 de Ana chegou agora.', 'Aguardando novos pedidos.')
           text = text.replace("financeNav.innerHTML='<i data-lucide=\"calculator\"></i><span>Logística</span>';", "financeNav.innerHTML='<i data-lucide=\"calculator\"></i><span>Financeiro</span>';")
           text = text.replace('.nav{grid-template-columns:repeat(4,1fr);height:100%}', '.nav{grid-template-columns:repeat(6,minmax(0,1fr));height:100%}')
@@ -72,7 +67,7 @@ jobs:
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, re.S | re.I)
           checked = 0
           for i, code in enumerate(scripts):
-              if not code.strip() or 'src=' in code[:100]:
+              if not code.strip():
                   continue
               tmp = Path(f'/tmp/delivery-lv-admin-{i}.js')
               tmp.write_text(code, encoding='utf-8')
