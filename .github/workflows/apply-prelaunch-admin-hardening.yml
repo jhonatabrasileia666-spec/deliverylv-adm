@@ -30,7 +30,7 @@ jobs:
       - name: Validate inline scripts parse
         run: |
           python - <<'PY'
-          import re, pathlib, subprocess, tempfile
+          import re, pathlib, subprocess
           s=pathlib.Path('index.html').read_text(encoding='utf-8')
           scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',s,re.S|re.I)
           for i,code in enumerate(scripts):
