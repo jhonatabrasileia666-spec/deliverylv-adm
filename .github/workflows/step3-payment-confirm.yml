@@ -1,0 +1,157 @@
+name: Apply payment confirmation step 3
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch admin payment flow
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global text
+              if old not in text:
+                  raise SystemExit(f'Expected code not found: {label}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              '<div class="stat-note">pedidos finalizados</div>',
+              '<div class="stat-note">pagamentos confirmados</div>',
+              'overview sales note'
+          )
+          replace_once(
+              '<div class="finance-note">pedidos finalizados</div>',
+              '<div class="finance-note">pagamentos confirmados</div>',
+              'finance sales note'
+          )
+          replace_once(
+              '<div class="finance-line"><span>Pedidos concluídos</span><strong id="finance-order-count">0</strong></div>',
+              '<div class="finance-line"><span>Pedidos pagos</span><strong id="finance-order-count">0</strong></div>',
+              'finance paid count label'
+          )
+          replace_once(
+              'Resultado = vendas finalizadas − custo diário informado − outros gastos do dia.',
+              'Resultado = pagamentos confirmados − custo diário informado − outros gastos do dia.',
+              'finance formula copy'
+          )
+
+          replace_once(
+              "function normalizeOrder(row,items=[]){return{id:row.id,customer:row.customer_name||'Cliente não informado',createdAt:row.created_at||Date.now(),minutes:Math.max(0,Math.floor((Date.now()-new Date(row.created_at||Date.now()).getTime())/60000)),status:normalizeStatus(row.status),time:new Date(row.created_at||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),type:normalizeOrderType(row.order_type),payment:row.payment_method||'A confirmar',total:Number(row.total||0),items}}",
+              "function normalizeOrder(row,items=[]){const paymentStatus=String(row.payment_status||'pending').toLowerCase();return{id:row.id,customer:row.customer_name||'Cliente não informado',createdAt:row.created_at||Date.now(),minutes:Math.max(0,Math.floor((Date.now()-new Date(row.created_at||Date.now()).getTime())/60000)),status:normalizeStatus(row.status),time:new Date(row.created_at||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),type:normalizeOrderType(row.order_type),payment:row.payment_method||'A confirmar',paymentStatus,paymentConfirmed:paymentStatus==='paid',paidAt:row.paid_at||null,total:Number(row.total||0),items}}",
+              'normalizeOrder'
+          )
+          replace_once(
+              "db.from('orders').select('id,customer_name,order_type,payment_method,status,total,created_at')",
+              "db.from('orders').select('id,customer_name,order_type,payment_method,payment_status,paid_at,status,total,created_at')",
+              'orders select payment fields'
+          )
+
+          pattern = r"  function orderCard\(order\)\{.*?\n  function boardColumn"
+          replacement = '''  function orderCard(order){
+    const meta=orderStatusMeta(order);
+    const paymentState=order.paymentConfirmed?'Confirmado':'Pendente';
+    let actions='';
+    if(order.status==='new'){
+      actions=`<button class="button small" data-action="accept" data-id="${order.id}"><i data-lucide="arrow-right"></i>${meta.nextLabel}</button><button class="mini-action" data-action="reject" data-id="${order.id}" aria-label="Recusar pedido"><i data-lucide="x"></i></button>`;
+    }else if(order.status==='done'){
+      actions=order.paymentConfirmed
+        ?`<button class="button small secondary" data-action="details" data-id="${order.id}"><i data-lucide="badge-check"></i>Pagamento confirmado</button>`
+        :`<button class="button small" data-action="confirm-payment" data-id="${order.id}"><i data-lucide="circle-dollar-sign"></i>Confirmar pagamento</button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`;
+    }else if(order.status==='cancelled'){
+      actions=`<button class="button small secondary" data-action="details" data-id="${order.id}"><i data-lucide="eye"></i>Ver detalhes</button>`;
+    }else{
+      actions=`<button class="button small" data-action="advance" data-id="${order.id}">${meta.nextLabel}<i data-lucide="arrow-right"></i></button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`;
+    }
+    return `<article class="order-card ${statusClass(order.status)}" data-order="${order.id}"><div class="order-card-top"><span class="order-number">#${order.id}</span><span class="order-time">há ${order.minutes} min</span></div><div class="customer">${order.customer}</div><div class="order-meta"><i data-lucide="clock"></i>${order.time} · ${order.type}</div><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${item.name}</strong>${item.detail?`<span>- ${item.detail}</span>`:''}</div>`).join('')}</div><div class="order-info"><div class="info-line"><span>Pagamento</span><strong>${order.payment}</strong></div><div class="info-line"><span>Recebimento</span><strong>${paymentState}</strong></div><div class="info-line"><span>Entrega</span><strong>${order.type}</strong></div></div><div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div><div class="card-actions">${actions}</div></article>`;
+  }
+  function boardColumn'''
+          text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Expected code not found: orderCard block')
+
+          pattern = r"  function renderHistory\(\)\{.*?\n  function renderStats"
+          replacement = '''  function renderHistory(){
+    const target=document.querySelector('#history-table');
+    const rows=orders.filter(o=>['done','delivery','cancelled'].includes(o.status)).sort((a,b)=>b.id-a.id);
+    target.innerHTML='<div class="table-head"><span>Pedido</span><span>Cliente</span><span>Data / horário</span><span>Total</span><span>Status</span><span>Pagamento</span></div>'+rows.map(order=>`<div class="table-row"><button data-action="details" data-id="${order.id}" style="display:contents;color:inherit;background:transparent"><span><strong>#${order.id}</strong></span><span>${order.customer}</span><span>Hoje<small>${order.time}</small></span><span class="table-total">${money(order.total)}</span><span class="status ${order.status==='done'?'done':order.status==='cancelled'?'cancel':''}">${statusMeta[order.status].label}</span></button><span>${order.status==='done'?(order.paymentConfirmed?'<span class="status ready">Pago</span>':`<button class="button small" data-action="confirm-payment" data-id="${order.id}">Confirmar</button>`):'-'}</span></div>`).join('');
+    lucide.createIcons();
+  }
+  function renderStats'''
+          text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Expected code not found: renderHistory block')
+
+          replace_once(
+              "const sales=orders.filter(o=>o.status==='done'&&isToday(o.createdAt)).reduce((sum,o)=>sum+o.total,0);",
+              "const sales=orders.filter(o=>o.status==='done'&&o.paymentConfirmed&&isToday(o.paidAt||o.createdAt)).reduce((sum,o)=>sum+o.total,0);",
+              'today sales calculation'
+          )
+
+          old_update = "async function updateStatus(id,next){const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'delivered',done:'completed',cancelled:'cancelled'}[next];if(!status)return;const{error}=await db.from('orders').update({status}).eq('id',id);if(error){console.error('Erro ao atualizar pedido:',error);showToast(`Erro ao atualizar pedido: ${error.message||'verifique as permissões'}`);return}await loadRealOrders({notify:false});showToast(next==='done'?'Pedido finalizado':next==='cancelled'?'Pedido recusado':'Pedido atualizado')}"
+          new_update = old_update + "\n  async function confirmPayment(id){const order=orders.find(item=>item.id===id);if(!order||order.status!=='done'||order.paymentConfirmed)return;const{error}=await db.from('orders').update({payment_status:'paid',paid_at:new Date().toISOString()}).eq('id',id).eq('status','completed').eq('payment_status','pending');if(error){console.error('Erro ao confirmar pagamento:',error);showToast(`Erro ao confirmar pagamento: ${error.message||'tente novamente'}`);return}await loadRealOrders({notify:false});showToast('Pagamento confirmado e lançado no financeiro')}"
+          replace_once(old_update, new_update, 'confirmPayment function')
+
+          replace_once(
+              "<div class=\"info-line\"><span>Pagamento</span><strong>${order.payment}</strong></div><div class=\"total-line\">",
+              "<div class=\"info-line\"><span>Pagamento</span><strong>${order.payment}</strong></div><div class=\"info-line\"><span>Recebimento</span><strong>${order.paymentConfirmed?'Confirmado':'Pendente'}</strong></div><div class=\"total-line\">",
+              'details payment state'
+          )
+          replace_once(
+              "${order.status==='new'?`<button class=\"button\" data-action=\"accept\" data-id=\"${order.id}\">${meta.nextLabel}</button>`:!['done','cancelled'].includes(order.status)?`<button class=\"button\" data-action=\"advance\" data-id=\"${order.id}\">${meta.nextLabel}</button>`:''}<button class=\"button secondary\" data-close-modal>Fechar</button>",
+              "${order.status==='new'?`<button class=\"button\" data-action=\"accept\" data-id=\"${order.id}\">${meta.nextLabel}</button>`:order.status==='done'&&!order.paymentConfirmed?`<button class=\"button\" data-action=\"confirm-payment\" data-id=\"${order.id}\">Confirmar pagamento</button>`:!['done','cancelled'].includes(order.status)?`<button class=\"button\" data-action=\"advance\" data-id=\"${order.id}\">${meta.nextLabel}</button>`:''}<button class=\"button secondary\" data-close-modal>Fechar</button>",
+              'details confirm action'
+          )
+
+          replace_once(
+              "if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='details')openDetails(id)",
+              "if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='confirm-payment'){confirmPayment(id)}if(action.dataset.action==='details')openDetails(id)",
+              'click payment action'
+          )
+
+          replace_once(
+              "const date=dateKey(year,month,day),dayOrders=orders.filter(order=>order.status==='done'&&businessDate(order.createdAt)===date),sales=dayOrders.reduce((sum,order)=>sum+order.total,0)",
+              "const date=dateKey(year,month,day),dayOrders=orders.filter(order=>order.status==='done'&&order.paymentConfirmed&&businessDate(order.paidAt||order.createdAt)===date),sales=dayOrders.reduce((sum,order)=>sum+order.total,0)",
+              'finance daily paid orders'
+          )
+          replace_once(
+              "const finalized=orders.filter(order=>order.status==='done'&&businessDate(order.createdAt)===today);const values={sales,cost:productCost,expenses:operational,profit,orderCount:finalized.length",
+              "const paidOrders=orders.filter(order=>order.status==='done'&&order.paymentConfirmed&&businessDate(order.paidAt||order.createdAt)===today);const values={sales,cost:productCost,expenses:operational,profit,orderCount:paidOrders.length",
+              'finance paid order count'
+          )
+          replace_once(
+              "pedido${data.orders>1?'s':''} finalizado${data.orders>1?'s':''} neste dia.",
+              "pagamento${data.orders>1?'s':''} confirmado${data.orders>1?'s':''} neste dia.",
+              'day summary paid copy'
+          )
+          replace_once(
+              "'Nenhum pedido finalizado neste dia.'",
+              "'Nenhum pagamento confirmado neste dia.'",
+              'day summary empty copy'
+          )
+
+          path.write_text(text, encoding='utf-8', newline='')
+          PY
+
+          rm -f .github/workflows/step3-payment-confirm.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: confirm payments before finance"
+          git push origin HEAD:main
