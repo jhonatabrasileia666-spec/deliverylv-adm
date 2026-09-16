@@ -1,0 +1,33 @@
+name: Apply delivery address display fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-delivery-address-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply address display fix
+        run: python .github/scripts/show-delivery-address.py
+      - name: Validate result
+        run: |
+          test "$(grep -o 'data-lv-delivery-address' index.html | wc -l)" -eq 2
+          grep -q "escapeMenuText(order.address||'Não informado')" index.html
+          grep -q "order.type==='Entrega'" index.html
+      - name: Commit fix and remove temporary automation
+        run: |
+          rm -f .github/scripts/show-delivery-address.py .github/workflows/apply-delivery-address-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: show delivery address in admin orders'
+          git push
