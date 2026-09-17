@@ -1,0 +1,48 @@
+name: Promotions inside Cardapio tabs
+
+on:
+  push:
+    branches: [work-deliverylv-adm]
+    paths:
+      - '.github/scripts/promotions-inside-menu.py'
+      - '.github/workflows/promotions-inside-menu.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work-deliverylv-adm
+          fetch-depth: 0
+      - name: Preserve patch script
+        run: cp .github/scripts/promotions-inside-menu.py /tmp/promotions-inside-menu.py
+      - name: Patch main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout main
+          git pull --ff-only origin main
+          python /tmp/promotions-inside-menu.py
+          python - <<'PY'
+          import re, pathlib
+          text=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts='\n'.join(re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,re.S))
+          pathlib.Path('/tmp/admin-inline.js').write_text(scripts,encoding='utf-8')
+          assert 'data-view="promotions"' not in text
+          assert 'id="view-promotions"' not in text
+          assert 'data-menu-subview="products"' in text
+          assert 'data-menu-subview="promotions"' in text
+          assert text.count('id="promotion-manager"') == 1
+          assert 'repeat(5,1fr)' in text
+          PY
+          node --check /tmp/admin-inline.js
+          git config user.name 'jhonatabrasileia666-spec'
+          git config user.email 'jhonata.brasileia666@gmail.com'
+          git add index.html
+          git diff --cached --check
+          git commit -m 'feat: move promotions inside cardapio tabs' || exit 0
+          git push origin main
