@@ -73,7 +73,7 @@ new=r'''  const promotionSizeKey=value=>String(value||'').normalize('NFD').repla
     }catch(error){console.error('Erro ao salvar promoções:',error);status.textContent='Não foi possível salvar';showToast(error?.message||'Erro ao salvar promoções');button.disabled=false}
   }
   function formSizesFor(item){'''
-s,count=pattern.subn(new,s,count=1)
+s,count=pattern.subn(lambda _: new,s,count=1)
 if count!=1: raise SystemExit('promotion manager block not found')
 
 path.write_text(s,encoding='utf-8')
