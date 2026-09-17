@@ -1,15 +1,15 @@
-const CACHE_NAME='deliverylv-panel-v2';
-const APP_SHELL=['./','./index.html','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
+const CACHE_NAME='deliverylv-panel-v3-remote-updates';
+const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260917-remote-update-1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
 const PUSH_ACK_URL='https://nhvarlrbqbryrurpdwvp.supabase.co/functions/v1/lv-web-push';
 
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting()));
 });
 
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    await Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)));
+    await Promise.all(keys.filter(key=>key.startsWith('deliverylv-panel-')&&key!==CACHE_NAME).map(key=>caches.delete(key)));
     await self.clients.claim();
   })());
 });
@@ -23,20 +23,33 @@ self.addEventListener('fetch',event=>{
   if(request.mode==='navigate'){
     event.respondWith((async()=>{
       try{
-        const fresh=await fetch(request);
+        const fresh=await fetch(new Request(request,{cache:'no-store'}));
+        if(!fresh.ok)throw new Error('Página indisponível');
         const cache=await caches.open(CACHE_NAME);
         cache.put('./index.html',fresh.clone());
         return fresh;
       }catch(error){
-        return (await caches.match('./index.html'))||(await caches.match('./'));
+        return (await (await caches.open(CACHE_NAME)).match('./index.html'))||(await (await caches.open(CACHE_NAME)).match('./'))||Response.error();
       }
     })());
     return;
   }
 
-  if(['script','style','font','image'].includes(request.destination)||url.origin===self.location.origin){
+  // Código sempre validado na rede; apenas o cache offline pertence a este aplicativo.
+  if(request.destination==='script'||request.destination==='style'||url.pathname.endsWith('/lv-updates.js')){
     event.respondWith((async()=>{
-      const cached=await caches.match(request);
+      const cache=await caches.open(CACHE_NAME);
+      try{
+        const fresh=await fetch(new Request(request,{cache:'no-store'}));
+        if(fresh.ok)await cache.put(request,fresh.clone());
+        return fresh;
+      }catch(error){return (await cache.match(request))||Response.error()}
+    })());
+    return;
+  }
+  if(['font','image'].includes(request.destination)||url.origin===self.location.origin){
+    event.respondWith((async()=>{
+      const cached=await (await caches.open(CACHE_NAME)).match(request);
       const network=fetch(request).then(async response=>{
         if(response&&response.status<400){
           const cache=await caches.open(CACHE_NAME);
@@ -105,3 +118,6 @@ self.addEventListener('notificationclick',event=>{
     await self.clients.openWindow(data.url||'./');
   })());
 });
+
+
+self.addEventListener('message',event=>{if(event.data?.type==='LV_ACTIVATE_UPDATE')event.waitUntil(self.skipWaiting())});

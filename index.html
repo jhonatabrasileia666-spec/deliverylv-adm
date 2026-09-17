@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
+  <meta name="lv-updates-build" content="20260917-remote-update-1">
+  <script src="./lv-updates.js?v=20260917-remote-update-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -302,6 +304,17 @@
           </form>
           <div class="account-status" id="owner-status" role="status" aria-live="polite"></div>
         </div>
+        <div class="account-section" id="remote-update-section" style="display:none">
+          <h3>Atualização dos sites</h3>
+          <p>Força os dispositivos conectados a carregar a versão já publicada. Use depois de publicar suas alterações. Telas fechadas ou sem internet atualizam ao voltar.</p>
+          <div style="display:grid;gap:8px">
+            <button class="button small" type="button" data-force-update="both"><i data-lucide="refresh-cw"></i>Atualizar os dois</button>
+            <button class="button secondary small" type="button" data-force-update="menu">Somente cardápio</button>
+            <button class="button secondary small" type="button" data-force-update="admin">Somente painel</button>
+          </div>
+          <p id="remote-update-last">Consultando última atualização...</p>
+          <div class="account-status" id="remote-update-status" role="status" aria-live="polite"></div>
+        </div>
         <div class="account-section">
           <h3>Alterar minha senha</h3>
           <p>A nova senha precisa ter pelo menos 8 caracteres. Ao trocar, sua sessão atual será encerrada.</p>
@@ -357,7 +370,7 @@ window.LVAlerts=(()=>{
     tone(880,.35,620);
   }
   function vibrate(){try{navigator.vibrate?.([300,120,300,120,500])}catch(error){}}
-  async function ensureSw(){if(swRegistration)return swRegistration;if(!('serviceWorker' in navigator))return null;try{swRegistration=await navigator.serviceWorker.register('./notification-sw.js',{scope:'./'});return swRegistration}catch(error){console.warn('Service Worker de alerta indisponível',error);return null}}
+  async function ensureSw(){if(swRegistration)return swRegistration;if(!('serviceWorker' in navigator))return null;try{swRegistration=await navigator.serviceWorker.register('./notification-sw.js',{scope:'./',updateViaCache:'none'});return swRegistration}catch(error){console.warn('Service Worker de alerta indisponível',error);return null}}
   async function systemNotify(title,body,tag){if(!('Notification' in window)||Notification.permission!=='granted')return;try{const reg=await ensureSw();if(reg?.showNotification){await reg.showNotification(title,{body,tag,renotify:true,vibrate:[250,120,250],icon:'./pwa-icon-192.svg'});return}new Notification(title,{body,tag})}catch(error){console.warn('Notificação do sistema indisponível',error)}}
   function banner(key,title,body){document.querySelectorAll('.lv-urgent-alert').forEach(node=>node.remove());const node=document.createElement('div');node.className='lv-urgent-alert';node.dataset.alertKey=key;node.innerHTML=`<div class="lv-urgent-alert-icon"><i data-lucide="bell-ring"></i></div><div class="lv-urgent-alert-copy"><strong>${String(title).replace(/[<>]/g,'')}</strong><span>${String(body).replace(/[<>]/g,'')}</span></div><button type="button" data-lv-alert-dismiss="${key}">OK</button>`;document.body.appendChild(node);window.lucide?.createIcons()}
   function pulse(title,body,tag,withSystem=false){beep();vibrate();if(withSystem)systemNotify(title,body,tag)}
@@ -829,6 +842,7 @@ window.LVAlerts=(()=>{
   function renderPanelProfile(profile){
     panelProfile=profile;
     const isSuper=profile?.role==='superadmin';
+    document.querySelector('#remote-update-section').style.display=isSuper?'block':'none';
     document.querySelector('#account-label').textContent=isSuper?'Super Admin':'Proprietária';
     document.querySelector('#account-avatar').textContent=isSuper?'JJ':'LV';
     document.querySelector('#account-role').textContent=isSuper?'Super Admin':'Proprietária';
@@ -870,6 +884,7 @@ window.LVAlerts=(()=>{
     if(ordersRefreshTimer){clearInterval(ordersRefreshTimer);ordersRefreshTimer=null}
     panelToken='';
     panelProfile=null;
+    document.querySelector('#remote-update-section').style.display='none';
     localStorage.removeItem(PANEL_SESSION_KEY);
     db=createPanelClient('');
     document.querySelector('#account-modal').classList.remove('show');
@@ -1456,7 +1471,7 @@ window.LVAlerts=(()=>{
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
-      navigator.serviceWorker.register('./notification-sw.js',{scope:'./'}).catch(error=>console.error('Erro ao registrar PWA:',error));
+      navigator.serviceWorker.register('./notification-sw.js',{scope:'./',updateViaCache:'none'}).catch(error=>console.error('Erro ao registrar PWA:',error));
     });
   }
 
@@ -1720,6 +1735,65 @@ window.LVAlerts=(()=>{
 })();
 </script>
 
+
+<script id="lv-remote-updates-admin">
+(() => {
+  if (!window.LVUpdates) return;
+  const status = document.querySelector('#remote-update-status');
+  const last = document.querySelector('#remote-update-last');
+  let sending = false;
+  const describe = rows => {
+    const label = app => {
+      const date = rows.find(row => row.app === app)?.requested_at;
+      return date ? new Date(date).toLocaleString('pt-BR', {timeZone:'America/Rio_Branco'}) : 'nenhuma solicitação';
+    };
+    last.textContent = `Cardápio: ${label('menu')} · Painel: ${label('admin')}`;
+  };
+  LVUpdates.init({
+    app:'admin', url:SUPABASE_URL, apiKey:SUPABASE_PUBLISHABLE_KEY,
+    onStatus:describe,
+    onError:() => { last.textContent = 'Não foi possível consultar as atualizações. Verifique a conexão.'; },
+    isBusy:() => sending || document.body.classList.contains('lv-printing') ||
+      !!document.querySelector('.modal.show:not(#account-modal), .overlay.show') ||
+      !!document.querySelector('#account-modal.show input:focus'),
+    beforeReload:() => LVUpdates.saveDraft({queue:window.LVPrinting?._queue || [],view:document.querySelector('.view.active')?.id,filter:currentFilter})
+  });
+  const saved = LVUpdates.takeDraft();
+  if (saved) {
+    if (Array.isArray(saved.queue) && window.LVPrinting) window.LVPrinting._queue.push(...saved.queue);
+    if (typeof saved.filter === 'string') currentFilter = saved.filter;
+    if (typeof saved.view === 'string' && document.getElementById(saved.view)) switchView(saved.view.replace(/^view-/,''));
+  }
+  document.querySelectorAll('[data-force-update]').forEach(button => button.addEventListener('click', async () => {
+    if (sending || panelProfile?.role !== 'superadmin') return;
+    sending = true;
+    const release = LVUpdates.hold();
+    const buttons = [...document.querySelectorAll('[data-force-update]')];
+    buttons.forEach(item => { item.disabled = true; });
+    status.className = 'account-status';
+    status.textContent = 'Enviando comando de atualização...';
+    try {
+      const me = await panelAuth('me');
+      if (!me?.ok || me.role !== 'superadmin') throw new Error('Entre novamente como super admin para atualizar.');
+      const {data,error} = await db.rpc('lv_force_app_update', {p_target:button.dataset.forceUpdate});
+      if (error) throw error;
+      if (!data?.ok) throw new Error('O comando não foi confirmado pelo servidor.');
+      status.textContent = 'Comando enviado. As telas conectadas receberão a atualização na próxima verificação.';
+      status.className = 'account-status ok';
+      await LVUpdates.check();
+    } catch (error) {
+      status.textContent = error.message || 'Não foi possível solicitar a atualização. Tente novamente.';
+      status.className = 'account-status error';
+    } finally {
+      sending = false;
+      release();
+      buttons.forEach(item => { item.disabled = false; });
+    }
+  }));
+})();
+</script>
+
 </body>
 </html>
+
 
