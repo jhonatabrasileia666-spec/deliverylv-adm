@@ -1,0 +1,47 @@
+name: Separate promotions view
+
+on:
+  push:
+    branches: [work-deliverylv-adm]
+    paths:
+      - '.github/scripts/separate-promotions-view.py'
+      - '.github/workflows/separate-promotions-view.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work-deliverylv-adm
+          fetch-depth: 0
+      - name: Preserve patch script
+        run: cp .github/scripts/separate-promotions-view.py /tmp/separate-promotions-view.py
+      - name: Patch main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout main
+          git pull --ff-only origin main
+          python /tmp/separate-promotions-view.py
+          python - <<'PY'
+          import re, pathlib
+          text=pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts='\n'.join(re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,re.S))
+          pathlib.Path('/tmp/admin-inline.js').write_text(scripts,encoding='utf-8')
+          assert 'data-view="promotions"' in text
+          assert 'id="view-promotions"' in text
+          assert "view==='menu'||view==='promotions'" in text
+          assert 'repeat(6,1fr)' in text
+          assert text.count('id="promotion-manager"') == 1
+          PY
+          node --check /tmp/admin-inline.js
+          git config user.name 'jhonatabrasileia666-spec'
+          git config user.email 'jhonata.brasileia666@gmail.com'
+          git add index.html
+          git diff --cached --check
+          git commit -m 'feat: separate promotions into own admin view' || exit 0
+          git push origin main
