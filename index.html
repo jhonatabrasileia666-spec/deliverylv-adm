@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260917-remote-update-1">
-  <script src="./lv-updates.js?v=20260917-remote-update-1"></script>
+  <meta name="lv-updates-build" content="20260918-operation-rules-1">
+  <script src="./lv-updates.js?v=20260918-operation-rules-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -314,6 +314,28 @@
           </div>
           <p id="remote-update-last">Consultando última atualização...</p>
           <div class="account-status" id="remote-update-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="account-section" id="store-settings-section">
+          <h3>Funcionamento e taxas</h3>
+          <p>Configurações usadas pelo cardápio e validadas no servidor. O horário usa o fuso do Acre.</p>
+          <form class="account-form" id="store-settings-form">
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:9px">
+              <span><strong style="display:block;font-size:11px">Horário automático</strong><small style="display:block;margin-top:3px;color:var(--muted)">Abre e fecha sem precisar apertar o botão da loja.</small></span>
+              <input id="store-auto-schedule" type="checkbox" checked style="width:20px;height:20px;accent-color:var(--orange)">
+            </label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <label style="display:grid;gap:5px;color:var(--muted);font-size:10px">ABRE<input class="account-input" id="store-open-time" type="time" value="18:00" required></label>
+              <label style="display:grid;gap:5px;color:var(--muted);font-size:10px">FECHA<input class="account-input" id="store-close-time" type="time" value="23:00" required></label>
+            </div>
+            <label style="display:grid;gap:5px;color:var(--muted);font-size:10px">TAXA CARTÃO DE CRÉDITO (R$)<input class="account-input" id="store-card-credit-fee" type="number" min="0" step="0.01" value="5.00" required></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <label style="display:grid;gap:5px;color:var(--muted);font-size:10px">ESFIRRAS SEM TAXA A PARTIR DE<input class="account-input" id="store-esfiha-min" type="number" min="1" max="100" step="1" value="5" required></label>
+              <label style="display:grid;gap:5px;color:var(--muted);font-size:10px">TAXA ABAIXO DO MÍNIMO (R$)<input class="account-input" id="store-esfiha-fee" type="number" min="0" step="0.01" value="5.00" required></label>
+            </div>
+            <p style="margin:0;color:var(--muted);font-size:10px;line-height:1.5">Pizza não tem taxa de entrega. Não existe taxa por região. Retirada continua disponível. Atendimento no local foi removido.</p>
+            <button class="button small" type="submit"><i data-lucide="save"></i>Salvar funcionamento e taxas</button>
+          </form>
+          <div class="account-status" id="store-settings-status" role="status" aria-live="polite"></div>
         </div>
         <div class="account-section">
           <h3>Alterar minha senha</h3>
@@ -796,24 +818,48 @@ window.LVAlerts=(()=>{
   document.addEventListener('click',event=>{const statusTab=event.target.closest('[data-status-tab]');if(statusTab){currentFilter=statusTab.dataset.statusTab;renderBoard('orders-board')}});
   document.querySelector('#close-notice').onclick=async()=>{document.querySelector('#notification').classList.remove('show');window.LVAlerts?.stopAll?.();await window.LVBackgroundPush?.stopCurrent?.()};document.querySelector('[data-export-history]').onclick=()=>{const rows=orders.filter(order=>order.status==='done'),csv=['Pedido,Cliente,Data/Horário,Total,Status',...rows.map(order=>[order.id,order.customer,`${formatHistoryDate(order.createdAt)} ${order.time}`,order.total,statusMeta[order.status].label].map(value=>{const raw=String(value),safe=/^[=+\-@]/.test(raw)?"'"+raw:raw;return `"${safe.replaceAll('"','""')}"`}).join(','))].join('\n'),link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='historico-pedidos.csv';link.click();URL.revokeObjectURL(link.href);showToast('Histórico exportado')};document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.remove('active'));button.classList.add('active');currentFilter=button.dataset.filter;renderBoard('orders-board')});lucide.createIcons();
   let storeIsOpen=false;
+  let storeSettings={auto_schedule_enabled:true,open_time:'18:00',close_time:'23:00',card_credit_fee:5,esfiha_min_free_delivery:5,esfiha_small_order_fee:5,manual_is_open:true};
+  function fillStoreSettingsForm(){
+    const auto=document.querySelector('#store-auto-schedule'),open=document.querySelector('#store-open-time'),close=document.querySelector('#store-close-time'),card=document.querySelector('#store-card-credit-fee'),min=document.querySelector('#store-esfiha-min'),fee=document.querySelector('#store-esfiha-fee');
+    if(auto)auto.checked=Boolean(storeSettings.auto_schedule_enabled);
+    if(open)open.value=String(storeSettings.open_time||'18:00').slice(0,5);
+    if(close)close.value=String(storeSettings.close_time||'23:00').slice(0,5);
+    if(card)card.value=Number(storeSettings.card_credit_fee||0).toFixed(2);
+    if(min)min.value=String(Math.max(1,Number(storeSettings.esfiha_min_free_delivery||5)));
+    if(fee)fee.value=Number(storeSettings.esfiha_small_order_fee||0).toFixed(2);
+  }
   function renderStoreStatus(){
     const button=document.querySelector('#store-toggle-button');if(!button)return;
     button.classList.toggle('store-open',storeIsOpen);button.classList.toggle('store-closed',!storeIsOpen);
-    const span=button.querySelector('span');if(span)span.textContent=storeIsOpen?'Loja aberta':'Loja fechada';
-    button.title=storeIsOpen?'Fechar loja para novos pedidos':'Abrir loja para novos pedidos';
+    const span=button.querySelector('span');if(span)span.textContent=storeIsOpen?'Aberto agora':'Fechado agora';
+    button.title=storeSettings.auto_schedule_enabled
+      ?`Horário automático ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'} · clique para editar`
+      :(storeIsOpen?'Fechar loja para novos pedidos':'Abrir loja para novos pedidos');
+    fillStoreSettingsForm();
     if(window.lucide)lucide.createIcons();
   }
   async function loadStoreStatus(){
-    const{data,error}=await db.from('store_settings').select('is_open').eq('id',1).single();
+    const{data,error}=await db.rpc('lv_store_status');
     if(error){console.error('Erro ao carregar status da loja:',error);showToast('Não foi possível ler o status da loja');return false}
-    storeIsOpen=Boolean(data?.is_open);renderStoreStatus();return true;
+    storeSettings={...storeSettings,...(data||{})};
+    storeIsOpen=Boolean(data?.is_open);
+    renderStoreStatus();
+    return true;
   }
   async function toggleStoreStatus(){
-    const button=document.querySelector('#store-toggle-button');if(!button)return;button.disabled=true;
+    const button=document.querySelector('#store-toggle-button');if(!button)return;
+    if(storeSettings.auto_schedule_enabled){
+      showToast(`Horário automático ativo: ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'}`);
+      try{document.querySelector('#account-button')?.click()}catch(error){}
+      return;
+    }
+    button.disabled=true;
     const next=!storeIsOpen;
     try{
-      const{data,error}=await db.from('store_settings').update({is_open:next,updated_at:new Date().toISOString()}).eq('id',1).select('is_open').single();
-      if(error)throw error;storeIsOpen=Boolean(data?.is_open);renderStoreStatus();showToast(storeIsOpen?'Loja aberta para novos pedidos':'Loja fechada para novos pedidos');
+      const{error}=await db.from('store_settings').update({is_open:next,updated_at:new Date().toISOString()}).eq('id',1);
+      if(error)throw error;
+      await loadStoreStatus();
+      showToast(storeIsOpen?'Loja aberta para novos pedidos':'Loja fechada para novos pedidos');
     }catch(error){console.error('Erro ao alterar status da loja:',error);showToast('Não foi possível alterar o status da loja')}
     finally{button.disabled=false}
   }
@@ -928,6 +974,7 @@ window.LVAlerts=(()=>{
       const me=await panelAuth('me');
       if(!me?.ok){await clearPanelSession({message:'Sua sessão terminou. Entre novamente.'});return}
       renderPanelProfile(me);
+      await loadStoreStatus();
       document.querySelector('#account-modal').classList.add('show');
       lucide.createIcons();
     }catch(error){
@@ -966,6 +1013,47 @@ window.LVAlerts=(()=>{
       status.className='account-status error';
     }finally{button.disabled=false}
   };
+
+  document.querySelector('#store-settings-form')?.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const button=event.submitter;
+    const status=document.querySelector('#store-settings-status');
+    const auto=Boolean(document.querySelector('#store-auto-schedule')?.checked);
+    const openTime=document.querySelector('#store-open-time')?.value||'18:00';
+    const closeTime=document.querySelector('#store-close-time')?.value||'23:00';
+    const cardFee=Number(document.querySelector('#store-card-credit-fee')?.value);
+    const esfihaMin=Number(document.querySelector('#store-esfiha-min')?.value);
+    const esfihaFee=Number(document.querySelector('#store-esfiha-fee')?.value);
+    if(!/^\d{2}:\d{2}$/.test(openTime)||!/^\d{2}:\d{2}$/.test(closeTime)||!Number.isFinite(cardFee)||cardFee<0||!Number.isInteger(esfihaMin)||esfihaMin<1||esfihaMin>100||!Number.isFinite(esfihaFee)||esfihaFee<0){
+      status.textContent='Confira os horários e os valores informados.';
+      status.className='account-status error';
+      return;
+    }
+    if(button)button.disabled=true;
+    status.textContent='Salvando configurações...';
+    status.className='account-status';
+    try{
+      const payload={
+        auto_schedule_enabled:auto,
+        open_time:openTime,
+        close_time:closeTime,
+        card_credit_fee:cardFee,
+        esfiha_min_free_delivery:esfihaMin,
+        esfiha_small_order_fee:esfihaFee,
+        is_open:auto?true:Boolean(storeSettings.manual_is_open),
+        updated_at:new Date().toISOString()
+      };
+      const{error}=await db.from('store_settings').update(payload).eq('id',1);
+      if(error)throw error;
+      await loadStoreStatus();
+      status.textContent=`Salvo. Automático: ${auto?'sim':'não'} · ${openTime}–${closeTime} · crédito ${money(cardFee)} · esfihas abaixo de ${esfihaMin}: ${money(esfihaFee)}`;
+      status.className='account-status ok';
+    }catch(error){
+      console.error('Erro ao salvar funcionamento e taxas:',error);
+      status.textContent=error?.message||'Não foi possível salvar as configurações.';
+      status.className='account-status error';
+    }finally{if(button)button.disabled=false}
+  });
 
   document.querySelector('#password-form').onsubmit=async event=>{
     event.preventDefault();
