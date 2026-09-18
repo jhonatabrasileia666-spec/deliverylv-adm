@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260918-operation-rules-1">
-  <script src="./lv-updates.js?v=20260918-operation-rules-1"></script>
+  <meta name="lv-updates-build" content="20260918-store-override-1">
+  <script src="./lv-updates.js?v=20260918-store-override-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -318,6 +318,16 @@
         <div class="account-section" id="store-settings-section">
           <h3>Funcionamento e taxas</h3>
           <p>Configurações usadas pelo cardápio e validadas no servidor. O horário usa o fuso do Acre.</p>
+          <div style="margin-bottom:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">
+            <strong style="display:block;font-size:11px;margin-bottom:5px">Controle imediato da loja</strong>
+            <p style="margin:0 0 10px;color:var(--muted);font-size:10px;line-height:1.5">Passa por cima do horário automático sem apagar nem alterar o horário salvo. Use “Voltar ao automático” para retomar a programação normal.</p>
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px">
+              <button class="button small" type="button" data-store-override="open">Forçar abrir</button>
+              <button class="button danger small" type="button" data-store-override="closed">Forçar fechar</button>
+              <button class="button secondary small" type="button" data-store-override="auto">Voltar ao automático</button>
+            </div>
+            <div class="account-status" id="store-override-status" role="status" aria-live="polite" style="margin-top:8px"></div>
+          </div>
           <form class="account-form" id="store-settings-form">
             <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:9px">
               <span><strong style="display:block;font-size:11px">Horário automático</strong><small style="display:block;margin-top:3px;color:var(--muted)">Abre e fecha sem precisar apertar o botão da loja.</small></span>
@@ -818,7 +828,7 @@ window.LVAlerts=(()=>{
   document.addEventListener('click',event=>{const statusTab=event.target.closest('[data-status-tab]');if(statusTab){currentFilter=statusTab.dataset.statusTab;renderBoard('orders-board')}});
   document.querySelector('#close-notice').onclick=async()=>{document.querySelector('#notification').classList.remove('show');window.LVAlerts?.stopAll?.();await window.LVBackgroundPush?.stopCurrent?.()};document.querySelector('[data-export-history]').onclick=()=>{const rows=orders.filter(order=>order.status==='done'),csv=['Pedido,Cliente,Data/Horário,Total,Status',...rows.map(order=>[order.id,order.customer,`${formatHistoryDate(order.createdAt)} ${order.time}`,order.total,statusMeta[order.status].label].map(value=>{const raw=String(value),safe=/^[=+\-@]/.test(raw)?"'"+raw:raw;return `"${safe.replaceAll('"','""')}"`}).join(','))].join('\n'),link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='historico-pedidos.csv';link.click();URL.revokeObjectURL(link.href);showToast('Histórico exportado')};document.querySelectorAll('.filter').forEach(button=>button.onclick=()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.remove('active'));button.classList.add('active');currentFilter=button.dataset.filter;renderBoard('orders-board')});lucide.createIcons();
   let storeIsOpen=false;
-  let storeSettings={auto_schedule_enabled:true,open_time:'18:00',close_time:'23:00',card_credit_fee:5,esfiha_min_free_delivery:5,esfiha_small_order_fee:5,manual_is_open:true};
+  let storeSettings={auto_schedule_enabled:true,open_time:'18:00',close_time:'23:00',card_credit_fee:5,esfiha_min_free_delivery:5,esfiha_small_order_fee:5,manual_is_open:true,manual_override:null};
   function fillStoreSettingsForm(){
     const auto=document.querySelector('#store-auto-schedule'),open=document.querySelector('#store-open-time'),close=document.querySelector('#store-close-time'),card=document.querySelector('#store-card-credit-fee'),min=document.querySelector('#store-esfiha-min'),fee=document.querySelector('#store-esfiha-fee');
     if(auto)auto.checked=Boolean(storeSettings.auto_schedule_enabled);
@@ -827,14 +837,39 @@ window.LVAlerts=(()=>{
     if(card)card.value=Number(storeSettings.card_credit_fee||0).toFixed(2);
     if(min)min.value=String(Math.max(1,Number(storeSettings.esfiha_min_free_delivery||5)));
     if(fee)fee.value=Number(storeSettings.esfiha_small_order_fee||0).toFixed(2);
+    const overrideStatus=document.querySelector('#store-override-status');
+    if(overrideStatus){
+      const override=storeSettings.manual_override;
+      overrideStatus.textContent=override==='open'
+        ?'FORÇADO ABERTO — o horário automático está temporariamente ignorado.'
+        :override==='closed'
+          ?'FORÇADO FECHADO — o horário automático está temporariamente ignorado.'
+          :(storeSettings.auto_schedule_enabled
+            ?`AUTOMÁTICO — ${storeSettings.open_time||'18:00'} às ${storeSettings.close_time||'23:00'}.`
+            :'MANUAL — use o botão de abrir/fechar no topo.');
+      overrideStatus.className=`account-status ${override==='open'?'ok':override==='closed'?'error':''}`;
+    }
+    document.querySelectorAll('[data-store-override]').forEach(button=>{
+      const value=button.dataset.storeOverride;
+      const active=(value==='open'&&storeSettings.manual_override==='open')
+        ||(value==='closed'&&storeSettings.manual_override==='closed')
+        ||(value==='auto'&&!storeSettings.manual_override);
+      button.disabled=active;
+    });
   }
   function renderStoreStatus(){
     const button=document.querySelector('#store-toggle-button');if(!button)return;
     button.classList.toggle('store-open',storeIsOpen);button.classList.toggle('store-closed',!storeIsOpen);
-    const span=button.querySelector('span');if(span)span.textContent=storeIsOpen?'Aberto agora':'Fechado agora';
-    button.title=storeSettings.auto_schedule_enabled
-      ?`Horário automático ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'} · clique para editar`
-      :(storeIsOpen?'Fechar loja para novos pedidos':'Abrir loja para novos pedidos');
+    const override=storeSettings.manual_override;
+    const span=button.querySelector('span');
+    if(span)span.textContent=override==='open'?'Aberto (forçado)':override==='closed'?'Fechado (forçado)':storeIsOpen?'Aberto agora':'Fechado agora';
+    button.title=override==='open'
+      ?'Abertura forçada ativa · clique para editar'
+      :override==='closed'
+        ?'Fechamento forçado ativo · clique para editar'
+        :storeSettings.auto_schedule_enabled
+          ?`Horário automático ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'} · clique para editar`
+          :(storeIsOpen?'Fechar loja para novos pedidos':'Abrir loja para novos pedidos');
     fillStoreSettingsForm();
     if(window.lucide)lucide.createIcons();
   }
@@ -848,8 +883,10 @@ window.LVAlerts=(()=>{
   }
   async function toggleStoreStatus(){
     const button=document.querySelector('#store-toggle-button');if(!button)return;
-    if(storeSettings.auto_schedule_enabled){
-      showToast(`Horário automático ativo: ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'}`);
+    if(storeSettings.manual_override||storeSettings.auto_schedule_enabled){
+      showToast(storeSettings.manual_override
+        ?(storeSettings.manual_override==='open'?'Loja está forçada aberta':'Loja está forçada fechada')
+        :`Horário automático ativo: ${storeSettings.open_time||'18:00'}–${storeSettings.close_time||'23:00'}`);
       try{document.querySelector('#account-button')?.click()}catch(error){}
       return;
     }
@@ -1013,6 +1050,35 @@ window.LVAlerts=(()=>{
       status.className='account-status error';
     }finally{button.disabled=false}
   };
+
+  document.querySelector('#store-settings-section')?.addEventListener('click',async event=>{
+    const button=event.target.closest('[data-store-override]');
+    if(!button)return;
+    const mode=button.dataset.storeOverride;
+    if(!['open','closed','auto'].includes(mode))return;
+    document.querySelectorAll('[data-store-override]').forEach(item=>item.disabled=true);
+    const status=document.querySelector('#store-override-status');
+    if(status){
+      status.textContent=mode==='open'?'Forçando abertura...':mode==='closed'?'Forçando fechamento...':'Voltando ao horário automático...';
+      status.className='account-status';
+    }
+    try{
+      const{error}=await db.from('store_settings').update({
+        manual_override:mode==='auto'?null:mode,
+        updated_at:new Date().toISOString()
+      }).eq('id',1);
+      if(error)throw error;
+      await loadStoreStatus();
+      showToast(mode==='open'?'Loja forçada aberta':mode==='closed'?'Loja forçada fechada':'Horário automático retomado');
+    }catch(error){
+      console.error('Erro ao alterar override da loja:',error);
+      if(status){
+        status.textContent=error?.message||'Não foi possível alterar o controle imediato.';
+        status.className='account-status error';
+      }
+      fillStoreSettingsForm();
+    }
+  });
 
   document.querySelector('#store-settings-form')?.addEventListener('submit',async event=>{
     event.preventDefault();
