@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260918-push-onboarding-1">
-  <script src="./lv-updates.js?v=20260918-push-onboarding-1"></script>
+  <meta name="lv-updates-build" content="20260918-ios-push-install-1">
+  <script src="./lv-updates.js?v=20260918-ios-push-install-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -1622,7 +1622,8 @@ window.LVAlerts=(()=>{
   const installButton=document.querySelector('#pwa-install-button');
   let deferredInstallPrompt=null;
   const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-  const refreshInstallButton=()=>{if(!installButton)return;installButton.classList.toggle('show',Boolean(deferredInstallPrompt)&&!standalone());if(window.lucide)lucide.createIcons()};
+  const ios=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const refreshInstallButton=()=>{if(!installButton)return;installButton.classList.toggle('show',(Boolean(deferredInstallPrompt)||ios())&&!standalone());if(window.lucide)lucide.createIcons()};
 
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
@@ -1637,6 +1638,10 @@ window.LVAlerts=(()=>{
   });
 
   installButton?.addEventListener('click',async()=>{
+    if(ios()&&!standalone()){
+      window.LVBackgroundPush?.onboard?.(document.querySelector('#driver-app')?.classList.contains('authenticated')?'driver':'admin',{force:true});
+      return;
+    }
     if(!deferredInstallPrompt)return;
     installButton.disabled=true;
     try{
@@ -1674,6 +1679,16 @@ window.LVAlerts=(()=>{
     <div class="lv-notify-icon"><i data-lucide="bell-ring"></i></div>
     <h2 id="lv-notify-title">Ativar avisos de pedidos</h2>
     <p id="lv-notify-copy">Para receber pedidos mesmo com o painel em segundo plano, ative as notificações deste aparelho.</p>
+    <div id="lv-ios-install-guide" style="display:none;margin:0 0 14px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#211e1b">
+      <strong style="display:block;margin-bottom:8px;font-size:12px;color:var(--orange-soft)">No iPhone, faça uma vez:</strong>
+      <div style="display:grid;gap:7px;color:#d8cfc5;font-size:11px;line-height:1.5">
+        <div><b>1.</b> Toque no botão <b>Compartilhar</b> do navegador.</div>
+        <div><b>2.</b> Escolha <b>Adicionar à Tela de Início</b>.</div>
+        <div><b>3.</b> Se aparecer <b>Abrir como App</b>, deixe ativado e toque em <b>Adicionar</b>.</div>
+        <div><b>4.</b> Feche esta aba e abra o <b>Delivery LV</b> pelo ícone criado na Tela de Início.</div>
+        <div><b>5.</b> Dentro do app, toque em <b>Ativar notificações</b> e depois em <b>Permitir</b>.</div>
+      </div>
+    </div>
     <div class="lv-notify-status" id="lv-notify-setup-status">Verificando este aparelho...</div>
     <div class="lv-notify-actions">
       <button class="button" id="lv-notify-setup-enable" type="button"><i data-lucide="bell-ring"></i>Ativar notificações</button>
@@ -1696,6 +1711,28 @@ window.LVAlerts=(()=>{
   let currentAlert=null;
   let syncedAudience='';
   let syncing=false;
+  const isIOS=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  function showIOSInstallGuide(){
+    const guide=document.querySelector('#lv-ios-install-guide');
+    const copy=document.querySelector('#lv-notify-copy');
+    const enable=document.querySelector('#lv-notify-setup-enable');
+    if(guide)guide.style.display='block';
+    if(copy)copy.textContent='No iPhone, as notificações em segundo plano funcionam quando o Delivery LV é instalado na Tela de Início e aberto como aplicativo.';
+    if(enable){enable.innerHTML='<i data-lucide="smartphone"></i> Já instalei · verificar novamente';}
+    setNotifySetupState('','Instale o Delivery LV na Tela de Início e abra pelo ícone. Depois volte aqui para ativar as notificações.');
+    showNotifySetup();
+    window.lucide?.createIcons();
+  }
+  function resetNotifyGuide(){
+    const guide=document.querySelector('#lv-ios-install-guide');
+    const copy=document.querySelector('#lv-notify-copy');
+    const enable=document.querySelector('#lv-notify-setup-enable');
+    if(guide)guide.style.display='none';
+    if(copy)copy.textContent='Para receber pedidos mesmo com o painel em segundo plano, ative as notificações deste aparelho.';
+    if(enable)enable.innerHTML='<i data-lucide="bell-ring"></i>Ativar notificações';
+    window.lucide?.createIcons();
+  }
 
   function applicationServerKey(value){
     const padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64),out=new Uint8Array(raw.length);
@@ -1723,7 +1760,11 @@ window.LVAlerts=(()=>{
     const button=document.querySelector('#push-test-local');
     if(button)button.disabled=true;
     try{
-      if(!('Notification' in window))throw new Error('Este navegador não suporta notificações.');
+      if(isIOS()&&!isStandalone()){
+        showIOSInstallGuide();
+        return false;
+      }
+      if(!('Notification' in window))throw new Error('Este navegador não suporta notificações neste modo.');
       let permission=Notification.permission;
       if(permission==='default')permission=await Notification.requestPermission();
       if(permission!=='granted')throw new Error('A permissão de notificação não está liberada neste aparelho.');
@@ -1766,6 +1807,9 @@ window.LVAlerts=(()=>{
   function hideNotifySetup(){notifySetupElements().modal?.classList.remove('show')}
   function showNotifySetup(){notifySetupElements().modal?.classList.add('show');window.lucide?.createIcons()}
   async function notificationHealth(role){
+    if(isIOS()&&!isStandalone()){
+      return{state:'ios-install-required',ok:false,message:'No iPhone, instale o Delivery LV na Tela de Início e abra pelo ícone para ativar notificações.'};
+    }
     if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window)){
       return{state:'unsupported',ok:false,message:'Este navegador não oferece o recurso necessário para notificações em segundo plano.'};
     }
@@ -1792,11 +1836,17 @@ window.LVAlerts=(()=>{
     if(!role)return false;
     const health=await notificationHealth(role);
     if(health.ok){
+      resetNotifyGuide();
       setNotifySetupState('ok',health.message);
       hideNotifySetup();
       markButtons(true);
       return true;
     }
+    if(health.state==='ios-install-required'){
+      if(force||!sessionStorage.getItem('lv_notify_setup_dismissed'))showIOSInstallGuide();
+      return false;
+    }
+    resetNotifyGuide();
     setNotifySetupState(health.state==='denied'||health.state==='unsupported'?'error':'',health.message);
     if(force||!sessionStorage.getItem('lv_notify_setup_dismissed'))showNotifySetup();
     return false;
@@ -1804,6 +1854,11 @@ window.LVAlerts=(()=>{
   async function activateFromSetup(){
     const role=audience();
     const{enable}=notifySetupElements();
+    if(isIOS()&&!isStandalone()){
+      showIOSInstallGuide();
+      return false;
+    }
+    resetNotifyGuide();
     if(enable)enable.disabled=true;
     setNotifySetupState('','Ativando notificações neste aparelho...');
     try{
@@ -1881,7 +1936,9 @@ window.LVAlerts=(()=>{
   document.addEventListener('click',event=>{
     const button=event.target.closest('[data-enable-alerts]');if(!button)return;
     const role=audience();
-    if(role)registerPush(role,{ask:true}).then(ok=>{if(ok&&typeof showToast==='function')showToast('Notificações em segundo plano ativadas')});
+    if(!role)return;
+    if(isIOS()&&!isStandalone()){runNotificationOnboarding(role,{force:true});return}
+    registerPush(role,{ask:true}).then(ok=>{if(ok&&typeof showToast==='function')showToast('Notificações em segundo plano ativadas')});
   },true);
 
   navigator.serviceWorker?.addEventListener('message',event=>{
