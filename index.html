@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260918-push-diagnostics-1">
-  <script src="./lv-updates.js?v=20260918-push-diagnostics-1"></script>
+  <meta name="lv-updates-build" content="20260918-push-onboarding-1">
+  <script src="./lv-updates.js?v=20260918-push-onboarding-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -953,6 +953,7 @@ window.LVAlerts=(()=>{
     document.querySelector('#panel-app').classList.add('authenticated');
     try{
       await initPanel();
+      setTimeout(()=>window.LVBackgroundPush?.onboard?.('admin'),350);
     }catch(error){
       console.error('Erro ao iniciar painel:',error);
       showToast('Erro ao iniciar painel');
@@ -1569,7 +1570,7 @@ window.LVAlerts=(()=>{
   }
   async function enterDriver(profile){
     driverProfile=profile;driverKnownAvailableIds=new Set();driverAlertsReady=false;window.LVAlerts?.stop('driver-new-delivery');document.querySelector('#panel-app').classList.remove('authenticated');document.querySelector('#login-screen').style.display='none';document.querySelector('#driver-app').classList.add('authenticated');document.querySelector('#driver-profile-label').textContent=`${profile.name} · ${profile.vehicle_type||'Entregador'}`;
-    await loadDriverOrders();if(driverRefreshTimer)clearInterval(driverRefreshTimer);driverRefreshTimer=setInterval(loadDriverOrders,5000);lucide.createIcons();
+    await loadDriverOrders();if(driverRefreshTimer)clearInterval(driverRefreshTimer);driverRefreshTimer=setInterval(loadDriverOrders,5000);lucide.createIcons();setTimeout(()=>window.LVBackgroundPush?.onboard?.('driver'),350);
   }
   async function clearDriverSession(message=''){
     if(driverToken){try{await driverAuth('logout')}catch(error){}}
@@ -1658,6 +1659,28 @@ window.LVAlerts=(()=>{
   @keyframes lv-alert-in{to{transform:translate(-50%,0)}}
   @media(max-width:600px){.lv-server-alert{top:8px;align-items:flex-start}.lv-server-alert-icon{width:36px;height:36px}.lv-server-alert-stop{padding:0 9px}.lv-server-alert-copy span{max-width:45vw}}
 </style>
+<style>
+  .lv-notify-setup{position:fixed;inset:0;z-index:12000;display:none;place-items:center;padding:18px;background:rgba(8,7,6,.78);backdrop-filter:blur(10px)}
+  .lv-notify-setup.show{display:grid}
+  .lv-notify-card{width:min(420px,100%);background:#181512;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.48)}
+  .lv-notify-icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:rgba(197,255,77,.12);color:var(--lime);margin-bottom:14px}
+  .lv-notify-card h2{font-size:20px;margin:0 0 8px}.lv-notify-card p{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.6}
+  .lv-notify-status{margin:10px 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:11px;line-height:1.5}
+  .lv-notify-status.ok{color:var(--lime)}.lv-notify-status.error{color:#ff8b7f}
+  .lv-notify-actions{display:grid;gap:8px}.lv-notify-actions .button{width:100%;justify-content:center}
+</style>
+<div class="lv-notify-setup" id="lv-notify-setup" role="dialog" aria-modal="true" aria-labelledby="lv-notify-title">
+  <div class="lv-notify-card">
+    <div class="lv-notify-icon"><i data-lucide="bell-ring"></i></div>
+    <h2 id="lv-notify-title">Ativar avisos de pedidos</h2>
+    <p id="lv-notify-copy">Para receber pedidos mesmo com o painel em segundo plano, ative as notificações deste aparelho.</p>
+    <div class="lv-notify-status" id="lv-notify-setup-status">Verificando este aparelho...</div>
+    <div class="lv-notify-actions">
+      <button class="button" id="lv-notify-setup-enable" type="button"><i data-lucide="bell-ring"></i>Ativar notificações</button>
+      <button class="button secondary" id="lv-notify-setup-later" type="button">Continuar por enquanto</button>
+    </div>
+  </div>
+</div>
 <div class="lv-server-alert" id="lv-server-alert" role="alert" aria-live="assertive">
   <div class="lv-server-alert-icon"><i data-lucide="bell-ring"></i></div>
   <div class="lv-server-alert-copy"><strong id="lv-server-alert-title">Novo alerta</strong><span id="lv-server-alert-body">Existe uma atualização.</span><small class="lv-server-alert-status">O aviso continua até você parar.</small></div>
@@ -1727,6 +1750,76 @@ window.LVAlerts=(()=>{
       if(button)button.disabled=false;
     }
   }
+  function notifySetupElements(){
+    return{
+      modal:document.querySelector('#lv-notify-setup'),
+      status:document.querySelector('#lv-notify-setup-status'),
+      enable:document.querySelector('#lv-notify-setup-enable'),
+      later:document.querySelector('#lv-notify-setup-later')
+    };
+  }
+  function setNotifySetupState(type,text){
+    const{status}=notifySetupElements();if(!status)return;
+    status.textContent=text;
+    status.className='lv-notify-status'+(type?' '+type:'');
+  }
+  function hideNotifySetup(){notifySetupElements().modal?.classList.remove('show')}
+  function showNotifySetup(){notifySetupElements().modal?.classList.add('show');window.lucide?.createIcons()}
+  async function notificationHealth(role){
+    if(!('Notification'in window)||!('serviceWorker'in navigator)||!('PushManager'in window)){
+      return{state:'unsupported',ok:false,message:'Este navegador não oferece o recurso necessário para notificações em segundo plano.'};
+    }
+    const permission=Notification.permission;
+    if(permission==='denied'){
+      return{state:'denied',ok:false,message:'As notificações estão bloqueadas neste aparelho. O Android/navegador não permite que o site reabra essa autorização sozinho.'};
+    }
+    if(permission==='default'){
+      return{state:'needs-permission',ok:false,message:'Toque em “Ativar notificações” e depois em “Permitir” quando o celular perguntar.'};
+    }
+    try{
+      const registration=await navigator.serviceWorker.ready;
+      const subscription=await registration.pushManager.getSubscription();
+      if(!subscription)return{state:'needs-subscription',ok:false,message:'A permissão já está liberada. Toque em “Ativar notificações” para concluir a configuração.'};
+      const ok=await registerPush(role,{ask:false});
+      return ok
+        ?{state:'ready',ok:true,message:'Notificações ativadas neste aparelho.'}
+        :{state:'needs-subscription',ok:false,message:'A permissão está liberada, mas falta concluir o registro do aparelho.'};
+    }catch(error){
+      return{state:'error',ok:false,message:'Não foi possível concluir a ativação agora. Tente novamente.'};
+    }
+  }
+  async function runNotificationOnboarding(role,{force=false}={}){
+    if(!role)return false;
+    const health=await notificationHealth(role);
+    if(health.ok){
+      setNotifySetupState('ok',health.message);
+      hideNotifySetup();
+      markButtons(true);
+      return true;
+    }
+    setNotifySetupState(health.state==='denied'||health.state==='unsupported'?'error':'',health.message);
+    if(force||!sessionStorage.getItem('lv_notify_setup_dismissed'))showNotifySetup();
+    return false;
+  }
+  async function activateFromSetup(){
+    const role=audience();
+    const{enable}=notifySetupElements();
+    if(enable)enable.disabled=true;
+    setNotifySetupState('','Ativando notificações neste aparelho...');
+    try{
+      const ok=await registerPush(role,{ask:true});
+      if(ok){
+        setNotifySetupState('ok','Pronto. Este aparelho foi registrado para receber novos pedidos.');
+        sessionStorage.removeItem('lv_notify_setup_dismissed');
+        setTimeout(hideNotifySetup,700);
+        return true;
+      }
+      const health=await notificationHealth(role);
+      setNotifySetupState(health.state==='denied'||health.state==='unsupported'?'error':'',health.message);
+      return false;
+    }finally{if(enable)enable.disabled=false}
+  }
+
   async function registerPush(role,{ask=false}={}){
     if(syncing||!role||!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))return false;
     syncing=true;
@@ -1779,6 +1872,12 @@ window.LVAlerts=(()=>{
   }
 
   document.querySelector('#lv-server-alert-stop')?.addEventListener('click',stopCurrent);
+  document.querySelector('#lv-notify-setup-enable')?.addEventListener('click',activateFromSetup);
+  document.querySelector('#lv-notify-setup-later')?.addEventListener('click',()=>{
+    sessionStorage.setItem('lv_notify_setup_dismissed','1');
+    hideNotifySetup();
+  });
+
   document.addEventListener('click',event=>{
     const button=event.target.closest('[data-enable-alerts]');if(!button)return;
     const role=audience();
@@ -1793,13 +1892,18 @@ window.LVAlerts=(()=>{
 
   const sync=()=>{
     const role=audience();
-    if(role&&Notification.permission==='granted'&&role!==syncedAudience)registerPush(role);
+    if(!role)return;
+    if(Notification.permission==='granted'&&role!==syncedAudience){
+      registerPush(role).then(ok=>{if(ok)hideNotifySetup()});
+    }else if(Notification.permission!=='granted'){
+      setTimeout(()=>runNotificationOnboarding(role),250);
+    }
   };
   const observer=new MutationObserver(sync);
   ['panel-app','driver-app'].forEach(id=>{const el=document.getElementById(id);if(el)observer.observe(el,{attributes:true,attributeFilter:['class']})});
   window.addEventListener('load',()=>setTimeout(sync,1200));
   document.querySelector('#push-test-local')?.addEventListener('click',localNotificationTest);
-  window.LVBackgroundPush={register:registerPush,stopCurrent,testLocal:localNotificationTest};
+  window.LVBackgroundPush={register:registerPush,stopCurrent,testLocal:localNotificationTest,onboard:runNotificationOnboarding,health:notificationHealth};
 })();
 </script>
 
