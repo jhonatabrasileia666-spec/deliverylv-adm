@@ -1772,7 +1772,7 @@ window.LVAlerts=(()=>{
       const registration=await navigator.serviceWorker.ready;
       const subscription=await registration.pushManager?.getSubscription?.();
       await registration.showNotification('Teste local Delivery LV',{
-        body:'Se este aviso apareceu, o Android está permitindo notificações deste site.',
+        body:'Se este aviso apareceu, este aparelho está permitindo notificações do Delivery LV.',
         icon:'./pwa-icon-192.svg',
         badge:'./pwa-icon-192.svg',
         tag:'lv-local-test-'+Date.now(),
@@ -1815,7 +1815,7 @@ window.LVAlerts=(()=>{
     }
     const permission=Notification.permission;
     if(permission==='denied'){
-      return{state:'denied',ok:false,message:'As notificações estão bloqueadas neste aparelho. O Android/navegador não permite que o site reabra essa autorização sozinho.'};
+      return{state:'denied',ok:false,message:'As notificações estão bloqueadas neste aparelho. O sistema ou navegador não permite que o site reabra essa autorização sozinho.'};
     }
     if(permission==='default'){
       return{state:'needs-permission',ok:false,message:'Toque em “Ativar notificações” e depois em “Permitir” quando o celular perguntar.'};
