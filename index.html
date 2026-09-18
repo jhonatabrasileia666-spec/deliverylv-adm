@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260918-store-override-1">
-  <script src="./lv-updates.js?v=20260918-store-override-1"></script>
+  <meta name="lv-updates-build" content="20260918-push-diagnostics-1">
+  <script src="./lv-updates.js?v=20260918-push-diagnostics-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -271,7 +271,7 @@
     </div>
   </section>
   <div class="app" id="panel-app">
-    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="button secondary small store-toggle" id="store-toggle-button" type="button" title="Alterar status da loja"><i data-lucide="store"></i><span>Carregando loja...</span></button><button class="button secondary small lv-alert-toggle" data-enable-alerts type="button"><i data-lucide="bell-ring"></i><span>Ativar alertas</span></button><button class="button secondary small" id="switch-login-button" type="button"><i data-lucide="log-in"></i>Trocar acesso</button><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
+    <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="button secondary small store-toggle" id="store-toggle-button" type="button" title="Alterar status da loja"><i data-lucide="store"></i><span>Carregando loja...</span></button><button class="button secondary small lv-alert-toggle" data-enable-alerts type="button"><i data-lucide="bell-ring"></i><span>Ativar alertas</span></button><button class="button secondary small" id="push-test-local" type="button" title="Testar notificação neste aparelho"><i data-lucide="badge-check"></i><span>Testar notificação</span></button><button class="button secondary small" id="switch-login-button" type="button"><i data-lucide="log-in"></i>Trocar acesso</button><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
     <div class="layout">
       <aside class="sidebar"><div class="nav-label">Operação</div><nav class="nav"><button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Visão geral</span></button><button class="nav-item" data-view="orders"><i data-lucide="inbox"></i><span>Pedidos</span><b class="nav-count" id="new-count">2</b></button><button class="nav-item" data-view="menu"><i data-lucide="book-open"></i><span>Cardápio</span></button><button class="nav-item" data-view="drivers"><i data-lucide="bike"></i><span>Entregadores</span></button><button class="nav-item" data-view="history"><i data-lucide="archive"></i><span>Histórico</span></button></nav><div class="sidebar-bottom">Central local de pedidos<br><strong>Atualizado agora</strong></div></aside>
       <main class="main">
@@ -1696,6 +1696,37 @@ window.LVAlerts=(()=>{
       const span=button.querySelector('span');if(span&&active)span.textContent=text;
     });
   }
+  async function localNotificationTest(){
+    const button=document.querySelector('#push-test-local');
+    if(button)button.disabled=true;
+    try{
+      if(!('Notification' in window))throw new Error('Este navegador não suporta notificações.');
+      let permission=Notification.permission;
+      if(permission==='default')permission=await Notification.requestPermission();
+      if(permission!=='granted')throw new Error('A permissão de notificação não está liberada neste aparelho.');
+      if(!('serviceWorker' in navigator))throw new Error('Service Worker indisponível.');
+      const registration=await navigator.serviceWorker.ready;
+      const subscription=await registration.pushManager?.getSubscription?.();
+      await registration.showNotification('Teste local Delivery LV',{
+        body:'Se este aviso apareceu, o Android está permitindo notificações deste site.',
+        icon:'./pwa-icon-192.svg',
+        badge:'./pwa-icon-192.svg',
+        tag:'lv-local-test-'+Date.now(),
+        renotify:true,
+        vibrate:[400,150,700],
+        data:{url:'./',type:'lv-local-test'}
+      });
+      const detail=`Permissão: ${permission} · Service Worker: ativo · Push: ${subscription?'assinado':'sem assinatura'}`;
+      if(typeof showToast==='function')showToast('Teste local enviado. '+detail);
+      return true;
+    }catch(error){
+      console.error('Diagnóstico de notificação:',error);
+      if(typeof showToast==='function')showToast(error?.message||'Falha no teste de notificação.');
+      return false;
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
   async function registerPush(role,{ask=false}={}){
     if(syncing||!role||!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window))return false;
     syncing=true;
@@ -1767,7 +1798,8 @@ window.LVAlerts=(()=>{
   const observer=new MutationObserver(sync);
   ['panel-app','driver-app'].forEach(id=>{const el=document.getElementById(id);if(el)observer.observe(el,{attributes:true,attributeFilter:['class']})});
   window.addEventListener('load',()=>setTimeout(sync,1200));
-  window.LVBackgroundPush={register:registerPush,stopCurrent};
+  document.querySelector('#push-test-local')?.addEventListener('click',localNotificationTest);
+  window.LVBackgroundPush={register:registerPush,stopCurrent,testLocal:localNotificationTest};
 })();
 </script>
 
