@@ -1,5 +1,5 @@
-const CACHE_NAME='deliverylv-panel-v3-remote-updates';
-const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260917-remote-update-1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
+const CACHE_NAME='deliverylv-panel-v4-audible-push';
+const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260918-ios-push-install-1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
 const PUSH_ACK_URL='https://nhvarlrbqbryrurpdwvp.supabase.co/functions/v1/lv-web-push';
 
 self.addEventListener('install',event=>{
@@ -89,6 +89,8 @@ self.addEventListener('push',event=>{
       tag:data.tag||`lv-alert-${data.alertId||Date.now()}`,
       renotify:true,
       requireInteraction:true,
+      silent:false,
+      timestamp:Date.now(),
       vibrate:Array.isArray(data.vibrate)?data.vibrate:[700,180,700,180,900],
       data,
       actions:[
