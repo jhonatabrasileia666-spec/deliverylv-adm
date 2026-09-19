@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260919-direct-print-bridge-v1">
-  <script src="./lv-updates.js?v=20260919-direct-print-bridge-v1"></script>
+  <meta name="lv-updates-build" content="20260919-direct-print-diagnostics-v2">
+  <script src="./lv-updates.js?v=20260919-direct-print-diagnostics-v2"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -2095,7 +2095,7 @@ window.LVAlerts=(()=>{
   // Depois da configuracao inicial, tocar no icone imprime direto.
   const CONFIG=Object.freeze({
     receiptWidth:32,
-    bridgeUrls:['ws://127.0.0.1:22300','ws://localhost:22300'],
+    bridgeUrls:['ws://localhost:22300','ws://127.0.0.1:22300'],
     driverPackage:'com.escpos.printer',
     driverPlayUrl:'https://play.google.com/store/apps/details?id=com.escpos.printer'
   });
@@ -2247,14 +2247,45 @@ window.LVAlerts=(()=>{
   }
 
   async function testDirect(){
+    const button=document.querySelector('#lv-direct-print-test');
+    const status=document.querySelector('#lv-direct-print-status');
+    if(button){button.disabled=true;button.textContent='Testando...'}
+    if(status){
+      status.style.display='block';
+      status.style.borderColor='#ffffff22';
+      status.style.background='#211e1b';
+      status.style.color='#ddd';
+      status.innerHTML='<b>Testando conexão...</b><br>Procurando o serviço local na porta 22300.';
+    }
     try{
-      await ensureBridge();
+      const socket=await ensureBridge();
+      const testText='\n      TESTE DELIVERY LV\n\nImpressao direta conectada.\n\n\n';
+      const bytes=new Uint8Array([
+        0x1b,0x40,
+        0x1b,0x61,0x00,
+        ...Array.from(testText,ch=>ch.charCodeAt(0)&0x7f),
+        0x0a,0x0a,0x0a
+      ]);
+      socket.send(bytes);
       localStorage.setItem(READY_KEY,'1');
-      showToast?.('Impressão direta conectada');
-      hideDirectSetup();
+      if(status){
+        status.style.borderColor='#d9f15c66';
+        status.style.background='#202516';
+        status.style.color='#e9f6ab';
+        status.innerHTML='<b>Conectado!</b><br>A Celark deve imprimir agora um papel escrito <b>TESTE DELIVERY LV</b>. Se saiu o papel, a configuração terminou.';
+      }
+      if(button){button.textContent='Conectado ✓'}
       return true;
     }catch(error){
-      showToast?.('Driver não encontrado. Abra o Mharmal Printer e inicie o serviço.');
+      console.warn('Teste de impressão direta falhou',error);
+      closeBridge();
+      if(status){
+        status.style.borderColor='#ff8f7966';
+        status.style.background='#2b1e1b';
+        status.style.color='#ffd0c6';
+        status.innerHTML='<b>Não encontrei o serviço de impressão.</b><br>Abra o Mharmal Printer, conecte a Celark por Bluetooth e confirme que o serviço WebSocket está <b>INICIADO</b> na porta <b>22300</b>. Depois volte aqui e teste novamente.';
+      }
+      if(button){button.disabled=false;button.textContent='Testar novamente'}
       return false;
     }
   }
@@ -2274,6 +2305,7 @@ window.LVAlerts=(()=>{
             4. Volte aqui e toque em <b>Testar conexão</b>.<br><br>
             Depois disso: tocou no ícone da impressora → já sai o papel.
           </div>
+          <div id="lv-direct-print-status" style="display:none;margin-top:12px;padding:11px 12px;border:1px solid #ffffff22;border-radius:10px;background:#211e1b;color:#ddd;font-size:11px;line-height:1.55"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
             <button id="lv-direct-print-install" type="button" style="min-height:44px;border:0;border-radius:10px;background:#302a26;color:#fff;font-weight:800">Abrir Play Store</button>
             <button id="lv-direct-print-test" type="button" style="min-height:44px;border:0;border-radius:10px;background:#d9f15c;color:#17140f;font-weight:900">Testar conexão</button>
