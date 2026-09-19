@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260919-order-additions-admin-v1">
-  <script src="./lv-updates.js?v=20260919-order-additions-admin-v1"></script>
+  <meta name="lv-updates-build" content="20260919-direct-print-bridge-v1">
+  <script src="./lv-updates.js?v=20260919-direct-print-bridge-v1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -753,7 +753,7 @@ window.LVAlerts=(()=>{
     document.querySelector('#driver-modal').classList.remove('show');await loadDrivers();showToast(id?'Entregador atualizado':'Entregador cadastrado');
   }
   function orderCard(order){
-    const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order),printAction=`<button class="mini-action" data-action="print-order" data-id="${order.id}" aria-label="Enviar para impressora" title="Enviar para app Impressora"><i data-lucide="printer"></i></button>`;
+    const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order),printAction=`<button class="mini-action" data-action="print-order" data-id="${order.id}" aria-label="Enviar para impressora" title="Imprimir pedido"><i data-lucide="printer"></i></button>`;
     return `<article class="order-card ${statusClass(order.status)}" data-order="${order.id}"><div class="order-card-top"><span class="order-number">#${order.id} · ${escapeMenuText(order.orderCode||'Sem código')}</span><span class="order-time">há ${order.minutes} min</span></div><div class="customer">${escapeMenuText(order.customer)}</div><div class="order-meta"><i data-lucide="clock"></i>${order.time} · ${order.type}</div><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="order-info"><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}<div class="info-line"><span>Entrega</span><strong>${order.type}</strong></div>${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}</div><div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div><div class="card-actions">${order.status==='new'?`<button class="button small" data-action="accept" data-id="${order.id}"><i data-lucide="arrow-right"></i>${meta.nextLabel}</button><button class="mini-action" data-action="reject" data-id="${order.id}" aria-label="Recusar pedido"><i data-lucide="x"></i></button>`:deliveryCheck?`<button class="button small" data-action="validate-delivery-code" data-id="${order.id}"><i data-lucide="key-round"></i>Validar código de entrega</button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`:confirmable?`<button class="button small" data-action="confirm-payment" data-id="${order.id}"><i data-lucide="badge-check"></i>Confirmar pagamento</button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`:order.status==='done'||order.status==='cancelled'?`<button class="button small secondary" data-action="details" data-id="${order.id}"><i data-lucide="eye"></i>Ver detalhes</button>`:`<button class="button small" data-action="advance" data-id="${order.id}">${meta.nextLabel}<i data-lucide="arrow-right"></i></button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`}${printAction}</div></article>`;
   }
   function boardColumn(status,title,ordersToShow){return `<section class="order-column column-${status==='new'?'new':status==='accepted'?'accepted':status==='prep'?'prep':status==='ready'?'ready':'other'}"><div class="column-head"><div class="column-title">${title}</div><span class="column-count">${ordersToShow.length}</span></div><div class="column-list">${ordersToShow.length?ordersToShow.map(orderCard).join(''):'<div class="empty-column">Nenhum pedido aqui</div>'}</div></section>`}
@@ -799,7 +799,7 @@ window.LVAlerts=(()=>{
   function openDetails(id){
     const order=orders.find(item=>item.id===id);if(!order)return;
     const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order);
-    document.querySelector('#modal-content').innerHTML=`<div class="detail-summary"><strong>Pedido #${order.id} · ${escapeMenuText(order.orderCode||'Sem código')} · ${statusMeta[order.status].label}</strong><span>${escapeMenuText(order.customer)} · ${order.time} · ${escapeMenuText(order.type)}</span><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}<div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div></div><div class="modal-actions">${order.status==='new'?`<button class="button" data-action="accept" data-id="${order.id}">${meta.nextLabel}</button>`:deliveryCheck?`<button class="button" data-action="validate-delivery-code" data-id="${order.id}">Validar código de entrega</button>`:confirmable?`<button class="button" data-action="confirm-payment" data-id="${order.id}">Confirmar pagamento</button>`:!['done','cancelled'].includes(order.status)&&meta.next?`<button class="button" data-action="advance" data-id="${order.id}">${meta.nextLabel}</button>`:''}<button class="button secondary" data-action="print-order" data-id="${order.id}"><i data-lucide="printer"></i>Enviar para app Impressora</button><button class="button secondary" data-action="system-print-order" data-id="${order.id}">Impressão do sistema</button><button class="button secondary" data-close-modal>Fechar</button></div>`;
+    document.querySelector('#modal-content').innerHTML=`<div class="detail-summary"><strong>Pedido #${order.id} · ${escapeMenuText(order.orderCode||'Sem código')} · ${statusMeta[order.status].label}</strong><span>${escapeMenuText(order.customer)} · ${order.time} · ${escapeMenuText(order.type)}</span><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}<div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div></div><div class="modal-actions">${order.status==='new'?`<button class="button" data-action="accept" data-id="${order.id}">${meta.nextLabel}</button>`:deliveryCheck?`<button class="button" data-action="validate-delivery-code" data-id="${order.id}">Validar código de entrega</button>`:confirmable?`<button class="button" data-action="confirm-payment" data-id="${order.id}">Confirmar pagamento</button>`:!['done','cancelled'].includes(order.status)&&meta.next?`<button class="button" data-action="advance" data-id="${order.id}">${meta.nextLabel}</button>`:''}<button class="button secondary" data-action="print-order" data-id="${order.id}"><i data-lucide="printer"></i>Imprimir pedido</button><button class="button secondary" data-action="system-print-order" data-id="${order.id}">Impressão do sistema</button><button class="button secondary" data-close-modal>Fechar</button></div>`;
     document.querySelector('#detail-modal').classList.add('show');lucide.createIcons();
   }
   function showToast(text){const toast=document.querySelector('#toast')||document.createElement('div');toast.id='toast';toast.className='notification show';toast.innerHTML=`<div class="notification-icon"><i data-lucide="check"></i></div><div class="notification-copy"><strong>${escapeMenuText(text)}</strong><span>Central de pedidos</span></div>`;if(!toast.parentNode)document.body.appendChild(toast);lucide.createIcons();setTimeout(()=>toast.remove(),2400)}
@@ -2090,13 +2090,26 @@ window.LVAlerts=(()=>{
 <section id="lv-print-sheet" aria-hidden="true"></section>
 <script id="lv-printing-module">
 (()=>{
-  const CONFIG=Object.freeze({receiptWidth:32,preferredMode:'android-share'});
+  // DELIVERY LV — IMPRESSAO DIRETA ESC/POS VIA DRIVER LOCAL ANDROID
+  // Driver recomendado: Mharmal Printer (WebSocket local na porta 22300).
+  // Depois da configuracao inicial, tocar no icone imprime direto.
+  const CONFIG=Object.freeze({
+    receiptWidth:32,
+    bridgeUrls:['ws://127.0.0.1:22300','ws://localhost:22300'],
+    driverPackage:'com.escpos.printer',
+    driverPlayUrl:'https://play.google.com/store/apps/details?id=com.escpos.printer'
+  });
+  const READY_KEY='deliverylv_direct_print_ready_v1';
+  let bridgeSocket=null;
+  let bridgeUrl=null;
+  let bridgeConnecting=null;
 
   const clean=value=>String(value??'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();
   const moneyText=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const sep=()=>'-'.repeat(CONFIG.receiptWidth);
   const center=value=>{const text=clean(value).slice(0,CONFIG.receiptWidth);const left=Math.max(0,Math.floor((CONFIG.receiptWidth-text.length)/2));return ' '.repeat(left)+text};
   const formatDate=value=>{try{return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value))}catch{return''}};
+  const ascii=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^ -~\n]/g,'?');
 
   function orderById(id){return Array.isArray(orders)?orders.find(order=>Number(order.id)===Number(id)):null}
 
@@ -2110,6 +2123,7 @@ window.LVAlerts=(()=>{
     lines.push(`TIPO: ${clean(order.type||'')}`);
     if(order.address&&String(order.type).toLowerCase().includes('entrega'))lines.push(`ENDERECO: ${clean(order.address)}`);
     lines.push(`PAGAMENTO: ${clean(order.payment||'A confirmar')}`,sep(),'ITENS');
+
     (order.items||[]).forEach(item=>{
       const qty=Math.max(1,Number(item.qty||1));
       lines.push(`${qty}x ${clean(item.name||'Item')}`);
@@ -2117,8 +2131,20 @@ window.LVAlerts=(()=>{
       const unit=Number(item.price||0);
       if(Number.isFinite(unit)&&unit>0)lines.push(`  ${moneyText(unit)} x ${qty} = ${moneyText(unit*qty)}`);
     });
-    lines.push(sep(),`TOTAL: ${moneyText(order.total)}`,sep(),center('OBRIGADO!'),'');
+
+    lines.push(sep(),`TOTAL: ${moneyText(order.total)}`,sep(),center('OBRIGADO!'),'','','');
     return lines.join('\n');
+  }
+
+  function escposBytes(order){
+    const text=ascii(buildReceipt(order));
+    const body=Array.from(text,ch=>ch.charCodeAt(0)&0x7f);
+    return new Uint8Array([
+      0x1b,0x40,             // init
+      0x1b,0x61,0x00,       // alinhamento esquerda
+      ...body,
+      0x0a,0x0a,0x0a,0x0a  // avanca papel
+    ]);
   }
 
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
@@ -2144,68 +2170,152 @@ window.LVAlerts=(()=>{
     }
   }
 
-  async function copyReceipt(order){
-    const text=buildReceipt(order);
+  function closeBridge(){
+    try{bridgeSocket?.close()}catch(error){}
+    bridgeSocket=null;
+    bridgeConnecting=null;
+  }
+
+  function connectUrl(url,timeout=1800){
+    return new Promise((resolve,reject)=>{
+      let settled=false;
+      let socket;
+      const timer=setTimeout(()=>{
+        if(settled)return;
+        settled=true;
+        try{socket?.close()}catch(error){}
+        reject(new Error('timeout'));
+      },timeout);
+      try{
+        socket=new WebSocket(url);
+        socket.binaryType='arraybuffer';
+      }catch(error){
+        clearTimeout(timer);
+        reject(error);
+        return;
+      }
+      socket.onopen=()=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        bridgeSocket=socket;
+        bridgeUrl=url;
+        socket.onclose=()=>{if(bridgeSocket===socket)bridgeSocket=null};
+        socket.onerror=()=>{};
+        resolve(socket);
+      };
+      socket.onerror=()=>{
+        if(settled)return;
+        settled=true;
+        clearTimeout(timer);
+        try{socket.close()}catch(error){}
+        reject(new Error('bridge unavailable'));
+      };
+    });
+  }
+
+  async function ensureBridge(){
+    if(bridgeSocket?.readyState===WebSocket.OPEN)return bridgeSocket;
+    if(bridgeConnecting)return await bridgeConnecting;
+    bridgeConnecting=(async()=>{
+      const urls=bridgeUrl?[bridgeUrl,...CONFIG.bridgeUrls.filter(url=>url!==bridgeUrl)]:CONFIG.bridgeUrls;
+      let lastError=null;
+      for(const url of urls){
+        try{return await connectUrl(url)}
+        catch(error){lastError=error}
+      }
+      throw lastError||new Error('driver unavailable');
+    })().finally(()=>{bridgeConnecting=null});
+    return await bridgeConnecting;
+  }
+
+  async function directPrint(id,{silent=false}={}){
+    const order=orderById(id);
+    if(!order){showToast?.('Pedido não encontrado');return false}
     try{
-      await navigator.clipboard.writeText(text);
-      showToast?.('Comanda copiada. Cole em Notas no app Impressora.');
+      const socket=await ensureBridge();
+      socket.send(escposBytes(order));
+      localStorage.setItem(READY_KEY,'1');
+      if(!silent)showToast?.(`Pedido #${order.id} enviado para a impressora`);
       return true;
     }catch(error){
-      console.warn('Não foi possível copiar a comanda',error);
+      console.warn('Impressão direta indisponível',error);
+      closeBridge();
+      if(!silent)showDirectSetup();
       return false;
     }
   }
 
-  async function shareToPrinterApp(id){
-    const order=orderById(id);
-    if(!order){showToast?.('Pedido não encontrado');return false}
-    const text=buildReceipt(order);
-    const fileName=`DELIVERY_LV_PEDIDO_${String(order.id).padStart(4,'0')}.txt`;
-
-    if(!navigator.share){
-      const copied=await copyReceipt(order);
-      if(!copied)showToast?.('Compartilhamento não disponível neste aparelho');
-      return copied;
-    }
-
-    const file=new File([text],fileName,{type:'text/plain;charset=utf-8'});
+  async function testDirect(){
     try{
-      if(!navigator.canShare||navigator.canShare({files:[file]})){
-        await navigator.share({
-          title:`Delivery LV · Pedido #${order.id}`,
-          text:'Comanda do Delivery LV',
-          files:[file]
-        });
-      }else{
-        await navigator.share({
-          title:`Delivery LV · Pedido #${order.id}`,
-          text
-        });
-      }
+      await ensureBridge();
+      localStorage.setItem(READY_KEY,'1');
+      showToast?.('Impressão direta conectada');
+      hideDirectSetup();
       return true;
     }catch(error){
-      if(error?.name==='AbortError')return false;
-      console.warn('Compartilhamento com app de impressão falhou',error);
-      const copied=await copyReceipt(order);
-      if(!copied)showToast?.('Não foi possível enviar a comanda ao app Impressora');
-      return copied;
+      showToast?.('Driver não encontrado. Abra o Mharmal Printer e inicie o serviço.');
+      return false;
     }
   }
 
+  function setupMarkup(){
+    return `
+      <div id="lv-direct-print-setup" style="position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:20px;background:#000b">
+        <div style="width:min(430px,100%);padding:20px;border:1px solid #ffffff20;border-radius:16px;background:#1c1917;color:#fff;box-shadow:0 24px 80px #000c">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+            <div><strong style="display:block;font-size:18px">Configurar impressão direta</strong><span style="display:block;margin-top:5px;color:#aaa;font-size:11px;line-height:1.5">Isso é feito uma vez neste celular.</span></div>
+            <button id="lv-direct-print-close" type="button" style="width:36px;height:36px;border:0;border-radius:9px;background:#ffffff0d;color:#fff;font-size:20px">×</button>
+          </div>
+          <div style="margin-top:15px;padding:12px;border-radius:10px;background:#26211e;color:#ddd;font-size:12px;line-height:1.6">
+            1. Instale/abra <b>Mharmal Printer</b>.<br>
+            2. Conecte a Celark por Bluetooth dentro do app.<br>
+            3. Inicie o serviço WebSocket na porta <b>22300</b>.<br>
+            4. Volte aqui e toque em <b>Testar conexão</b>.<br><br>
+            Depois disso: tocou no ícone da impressora → já sai o papel.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+            <button id="lv-direct-print-install" type="button" style="min-height:44px;border:0;border-radius:10px;background:#302a26;color:#fff;font-weight:800">Abrir Play Store</button>
+            <button id="lv-direct-print-test" type="button" style="min-height:44px;border:0;border-radius:10px;background:#d9f15c;color:#17140f;font-weight:900">Testar conexão</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function hideDirectSetup(){document.querySelector('#lv-direct-print-setup')?.remove()}
+
+  function showDirectSetup(){
+    if(document.querySelector('#lv-direct-print-setup'))return;
+    document.body.insertAdjacentHTML('beforeend',setupMarkup());
+    document.querySelector('#lv-direct-print-close')?.addEventListener('click',hideDirectSetup);
+    document.querySelector('#lv-direct-print-install')?.addEventListener('click',()=>{
+      const market=`market://details?id=${CONFIG.driverPackage}`;
+      const fallback=()=>window.open(CONFIG.driverPlayUrl,'_blank','noopener');
+      try{
+        window.location.href=market;
+        setTimeout(()=>{if(document.visibilityState==='visible')fallback()},900);
+      }catch(error){fallback()}
+    });
+    document.querySelector('#lv-direct-print-test')?.addEventListener('click',testDirect);
+  }
+
   async function printPreferred(id){
-    if(/Android/i.test(navigator.userAgent)&&CONFIG.preferredMode==='android-share'){
-      return await shareToPrinterApp(id);
-    }
-    return printNormal(id);
+    const isAndroid=/Android/i.test(navigator.userAgent);
+    if(!isAndroid)return printNormal(id);
+    const ok=await directPrint(id);
+    return ok;
   }
 
   window.LVPrinting={
     config:CONFIG,
     buildReceipt,
+    escposBytes,
     printNormal,
-    shareToPrinterApp,
+    directPrint,
     printPreferred,
-    copyReceipt:(id)=>{const order=orderById(id);return order?copyReceipt(order):false}
+    testDirect,
+    showDirectSetup,
+    isConfigured:()=>localStorage.getItem(READY_KEY)==='1'
   };
 })();
 </script>
