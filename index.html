@@ -2090,19 +2090,15 @@ window.LVAlerts=(()=>{
 <section id="lv-print-sheet" aria-hidden="true"></section>
 <script id="lv-printing-module">
 (()=>{
-  // DELIVERY LV — IMPRESSAO DIRETA ESC/POS VIA DRIVER LOCAL ANDROID
-  // Driver recomendado: Mharmal Printer (WebSocket local na porta 22300).
-  // Depois da configuracao inicial, tocar no icone imprime direto.
+  // DELIVERY LV — IMPRESSAO DIRETA VIA RAWBT
+  // RawBT recebe ESC/POS pelo esquema rawbt:base64,... e envia para a impressora configurada no app.
   const CONFIG=Object.freeze({
     receiptWidth:32,
-    bridgeUrls:['ws://localhost:22300','ws://127.0.0.1:22300'],
-    driverPackage:'com.escpos.printer',
-    driverPlayUrl:'https://play.google.com/store/apps/details?id=com.escpos.printer'
+    rawbtPackage:'ru.a402d.rawbtprinter',
+    rawbtScheme:'rawbt:',
+    rawbtPlayUrl:'https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter'
   });
-  const READY_KEY='deliverylv_direct_print_ready_v1';
-  let bridgeSocket=null;
-  let bridgeUrl=null;
-  let bridgeConnecting=null;
+  const READY_KEY='deliverylv_rawbt_ready_v1';
 
   const clean=value=>String(value??'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();
   const moneyText=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -2140,11 +2136,35 @@ window.LVAlerts=(()=>{
     const text=ascii(buildReceipt(order));
     const body=Array.from(text,ch=>ch.charCodeAt(0)&0x7f);
     return new Uint8Array([
-      0x1b,0x40,             // init
-      0x1b,0x61,0x00,       // alinhamento esquerda
+      0x1b,0x40,
+      0x1b,0x61,0x00,
       ...body,
-      0x0a,0x0a,0x0a,0x0a  // avanca papel
+      0x0a,0x0a,0x0a,0x0a
     ]);
+  }
+
+  function bytesToBase64(bytes){
+    let binary='';
+    const chunk=0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+      binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+    }
+    return btoa(binary);
+  }
+
+  function openRawBt(bytes){
+    try{
+      const payload=bytesToBase64(bytes);
+      const uri=`${CONFIG.rawbtScheme}base64,${payload}`;
+      localStorage.setItem(READY_KEY,'1');
+      window.location.href=uri;
+      return true;
+    }catch(error){
+      console.error('Falha ao chamar RawBT',error);
+      showToast?.('Não consegui abrir o RawBT');
+      showRawBtSetup();
+      return false;
+    }
   }
 
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
@@ -2170,172 +2190,70 @@ window.LVAlerts=(()=>{
     }
   }
 
-  function closeBridge(){
-    try{bridgeSocket?.close()}catch(error){}
-    bridgeSocket=null;
-    bridgeConnecting=null;
-  }
-
-  function connectUrl(url,timeout=1800){
-    return new Promise((resolve,reject)=>{
-      let settled=false;
-      let socket;
-      const timer=setTimeout(()=>{
-        if(settled)return;
-        settled=true;
-        try{socket?.close()}catch(error){}
-        reject(new Error('timeout'));
-      },timeout);
-      try{
-        socket=new WebSocket(url);
-        socket.binaryType='arraybuffer';
-      }catch(error){
-        clearTimeout(timer);
-        reject(error);
-        return;
-      }
-      socket.onopen=()=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        bridgeSocket=socket;
-        bridgeUrl=url;
-        socket.onclose=()=>{if(bridgeSocket===socket)bridgeSocket=null};
-        socket.onerror=()=>{};
-        resolve(socket);
-      };
-      socket.onerror=()=>{
-        if(settled)return;
-        settled=true;
-        clearTimeout(timer);
-        try{socket.close()}catch(error){}
-        reject(new Error('bridge unavailable'));
-      };
-    });
-  }
-
-  async function ensureBridge(){
-    if(bridgeSocket?.readyState===WebSocket.OPEN)return bridgeSocket;
-    if(bridgeConnecting)return await bridgeConnecting;
-    bridgeConnecting=(async()=>{
-      const urls=bridgeUrl?[bridgeUrl,...CONFIG.bridgeUrls.filter(url=>url!==bridgeUrl)]:CONFIG.bridgeUrls;
-      let lastError=null;
-      for(const url of urls){
-        try{return await connectUrl(url)}
-        catch(error){lastError=error}
-      }
-      throw lastError||new Error('driver unavailable');
-    })().finally(()=>{bridgeConnecting=null});
-    return await bridgeConnecting;
-  }
-
-  async function directPrint(id,{silent=false}={}){
+  function directPrint(id){
     const order=orderById(id);
     if(!order){showToast?.('Pedido não encontrado');return false}
-    try{
-      const socket=await ensureBridge();
-      socket.send(escposBytes(order));
-      localStorage.setItem(READY_KEY,'1');
-      if(!silent)showToast?.(`Pedido #${order.id} enviado para a impressora`);
-      return true;
-    }catch(error){
-      console.warn('Impressão direta indisponível',error);
-      closeBridge();
-      if(!silent)showDirectSetup();
-      return false;
-    }
+    const ok=openRawBt(escposBytes(order));
+    if(ok)showToast?.(`Pedido #${order.id} enviado ao RawBT`);
+    return ok;
   }
 
-  async function testDirect(){
-    const button=document.querySelector('#lv-direct-print-test');
-    const status=document.querySelector('#lv-direct-print-status');
-    if(button){button.disabled=true;button.textContent='Testando...'}
-    if(status){
-      status.style.display='block';
-      status.style.borderColor='#ffffff22';
-      status.style.background='#211e1b';
-      status.style.color='#ddd';
-      status.innerHTML='<b>Testando conexão...</b><br>Procurando o serviço local na porta 22300.';
-    }
-    try{
-      const socket=await ensureBridge();
-      const testText='\n      TESTE DELIVERY LV\n\nImpressao direta conectada.\n\n\n';
-      const bytes=new Uint8Array([
-        0x1b,0x40,
-        0x1b,0x61,0x00,
-        ...Array.from(testText,ch=>ch.charCodeAt(0)&0x7f),
-        0x0a,0x0a,0x0a
-      ]);
-      socket.send(bytes);
-      localStorage.setItem(READY_KEY,'1');
-      if(status){
-        status.style.borderColor='#d9f15c66';
-        status.style.background='#202516';
-        status.style.color='#e9f6ab';
-        status.innerHTML='<b>Conectado!</b><br>A Celark deve imprimir agora um papel escrito <b>TESTE DELIVERY LV</b>. Se saiu o papel, a configuração terminou.';
-      }
-      if(button){button.textContent='Conectado ✓'}
-      return true;
-    }catch(error){
-      console.warn('Teste de impressão direta falhou',error);
-      closeBridge();
-      if(status){
-        status.style.borderColor='#ff8f7966';
-        status.style.background='#2b1e1b';
-        status.style.color='#ffd0c6';
-        status.innerHTML='<b>Não encontrei o serviço de impressão.</b><br>Abra o Mharmal Printer, conecte a Celark por Bluetooth e confirme que o serviço WebSocket está <b>INICIADO</b> na porta <b>22300</b>. Depois volte aqui e teste novamente.';
-      }
-      if(button){button.disabled=false;button.textContent='Testar novamente'}
-      return false;
-    }
+  function testDirect(){
+    const testText='\n        DELIVERY LV\n'+
+      '--------------------------------\n'+
+      'TESTE DE IMPRESSAO RAWBT\n'+
+      'Se este papel saiu, esta pronto.\n'+
+      '--------------------------------\n\n\n\n';
+    const body=Array.from(ascii(testText),ch=>ch.charCodeAt(0)&0x7f);
+    const bytes=new Uint8Array([0x1b,0x40,0x1b,0x61,0x00,...body,0x0a,0x0a,0x0a]);
+    return openRawBt(bytes);
   }
 
-  function setupMarkup(){
+  function hideRawBtSetup(){document.querySelector('#lv-rawbt-setup')?.remove()}
+
+  function rawBtSetupMarkup(){
     return `
-      <div id="lv-direct-print-setup" style="position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:20px;background:#000b">
+      <div id="lv-rawbt-setup" style="position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:20px;background:#000b">
         <div style="width:min(430px,100%);padding:20px;border:1px solid #ffffff20;border-radius:16px;background:#1c1917;color:#fff;box-shadow:0 24px 80px #000c">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-            <div><strong style="display:block;font-size:18px">Configurar impressão direta</strong><span style="display:block;margin-top:5px;color:#aaa;font-size:11px;line-height:1.5">Isso é feito uma vez neste celular.</span></div>
-            <button id="lv-direct-print-close" type="button" style="width:36px;height:36px;border:0;border-radius:9px;background:#ffffff0d;color:#fff;font-size:20px">×</button>
+            <div><strong style="display:block;font-size:18px">Impressão pelo RawBT</strong><span style="display:block;margin-top:5px;color:#aaa;font-size:11px;line-height:1.5">A impressora só precisa estar configurada no RawBT.</span></div>
+            <button id="lv-rawbt-close" type="button" style="width:36px;height:36px;border:0;border-radius:9px;background:#ffffff0d;color:#fff;font-size:20px">×</button>
           </div>
-          <div style="margin-top:15px;padding:12px;border-radius:10px;background:#26211e;color:#ddd;font-size:12px;line-height:1.6">
-            1. Instale/abra <b>Mharmal Printer</b>.<br>
-            2. Conecte a Celark por Bluetooth dentro do app.<br>
-            3. Inicie o serviço WebSocket na porta <b>22300</b>.<br>
-            4. Volte aqui e toque em <b>Testar conexão</b>.<br><br>
-            Depois disso: tocou no ícone da impressora → já sai o papel.
+          <div style="margin-top:15px;padding:12px;border-radius:10px;background:#26211e;color:#ddd;font-size:12px;line-height:1.65">
+            1. Abra o <b>RawBT</b> e deixe a impressora configurada como padrão.<br>
+            2. Volte ao Delivery LV.<br>
+            3. Toque em <b>Imprimir teste</b>.<br><br>
+            Se o papel sair, depois basta tocar no ícone da impressora em qualquer pedido.
           </div>
-          <div id="lv-direct-print-status" style="display:none;margin-top:12px;padding:11px 12px;border:1px solid #ffffff22;border-radius:10px;background:#211e1b;color:#ddd;font-size:11px;line-height:1.55"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
-            <button id="lv-direct-print-install" type="button" style="min-height:44px;border:0;border-radius:10px;background:#302a26;color:#fff;font-weight:800">Abrir Play Store</button>
-            <button id="lv-direct-print-test" type="button" style="min-height:44px;border:0;border-radius:10px;background:#d9f15c;color:#17140f;font-weight:900">Testar conexão</button>
+            <button id="lv-rawbt-install" type="button" style="min-height:44px;border:0;border-radius:10px;background:#302a26;color:#fff;font-weight:800">Abrir RawBT</button>
+            <button id="lv-rawbt-test" type="button" style="min-height:44px;border:0;border-radius:10px;background:#d9f15c;color:#17140f;font-weight:900">Imprimir teste</button>
           </div>
         </div>
       </div>`;
   }
 
-  function hideDirectSetup(){document.querySelector('#lv-direct-print-setup')?.remove()}
-
-  function showDirectSetup(){
-    if(document.querySelector('#lv-direct-print-setup'))return;
-    document.body.insertAdjacentHTML('beforeend',setupMarkup());
-    document.querySelector('#lv-direct-print-close')?.addEventListener('click',hideDirectSetup);
-    document.querySelector('#lv-direct-print-install')?.addEventListener('click',()=>{
-      const market=`market://details?id=${CONFIG.driverPackage}`;
-      const fallback=()=>window.open(CONFIG.driverPlayUrl,'_blank','noopener');
+  function showRawBtSetup(){
+    if(document.querySelector('#lv-rawbt-setup'))return;
+    document.body.insertAdjacentHTML('beforeend',rawBtSetupMarkup());
+    document.querySelector('#lv-rawbt-close')?.addEventListener('click',hideRawBtSetup);
+    document.querySelector('#lv-rawbt-test')?.addEventListener('click',testDirect);
+    document.querySelector('#lv-rawbt-install')?.addEventListener('click',()=>{
       try{
-        window.location.href=market;
-        setTimeout(()=>{if(document.visibilityState==='visible')fallback()},900);
-      }catch(error){fallback()}
+        window.location.href='rawbt:';
+        setTimeout(()=>{
+          if(document.visibilityState==='visible')window.open(CONFIG.rawbtPlayUrl,'_blank','noopener');
+        },900);
+      }catch(error){
+        window.open(CONFIG.rawbtPlayUrl,'_blank','noopener');
+      }
     });
-    document.querySelector('#lv-direct-print-test')?.addEventListener('click',testDirect);
   }
 
-  async function printPreferred(id){
+  function printPreferred(id){
     const isAndroid=/Android/i.test(navigator.userAgent);
     if(!isAndroid)return printNormal(id);
-    const ok=await directPrint(id);
-    return ok;
+    return directPrint(id);
   }
 
   window.LVPrinting={
@@ -2346,7 +2264,8 @@ window.LVAlerts=(()=>{
     directPrint,
     printPreferred,
     testDirect,
-    showDirectSetup,
+    showRawBtSetup,
+    showDirectSetup:showRawBtSetup,
     isConfigured:()=>localStorage.getItem(READY_KEY)==='1'
   };
 })();
