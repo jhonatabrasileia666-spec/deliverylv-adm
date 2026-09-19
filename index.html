@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260918-final-handoff-1">
-  <script src="./lv-updates.js?v=20260918-final-handoff-1"></script>
+  <meta name="lv-updates-build" content="20260919-free-ai-provider-setup-1">
+  <script src="./lv-updates.js?v=20260919-free-ai-provider-setup-1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -314,6 +314,50 @@
           </div>
           <p id="remote-update-last">Consultando última atualização...</p>
           <div class="account-status" id="remote-update-status" role="status" aria-live="polite"></div>
+        </div>
+        <div class="account-section" id="ai-providers-section" style="display:none">
+          <h3>IA gratuita do cardápio</h3>
+          <p>Rodízio automático: Gemini → Groq → OpenRouter → modo local. Se uma IA atingir o limite ou ficar fora do ar, o sistema tenta a próxima.</p>
+          <div style="display:grid;gap:10px">
+            <div data-ai-provider-card="gemini" style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <div><strong style="font-size:11px">Gemini Free</strong><small style="display:block;margin-top:3px;color:var(--muted)">Gemini 3.1 Flash-Lite · prioridade 1</small></div>
+                <span data-ai-provider-status="gemini" style="font-size:9px;color:var(--muted)">Verificando...</span>
+              </div>
+              <input class="account-input" data-ai-key="gemini" type="password" autocomplete="off" placeholder="Cole a chave gratuita do Gemini">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:7px">
+                <button class="button small" type="button" data-ai-save="gemini">Salvar chave</button>
+                <button class="button secondary small" type="button" data-ai-toggle="gemini" disabled>Ativar/pausar</button>
+                <a class="button secondary small" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Criar chave</a>
+              </div>
+            </div>
+            <div data-ai-provider-card="groq" style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <div><strong style="font-size:11px">Groq Free</strong><small style="display:block;margin-top:3px;color:var(--muted)">GPT-OSS 20B · prioridade 2</small></div>
+                <span data-ai-provider-status="groq" style="font-size:9px;color:var(--muted)">Verificando...</span>
+              </div>
+              <input class="account-input" data-ai-key="groq" type="password" autocomplete="off" placeholder="Cole a chave gratuita do Groq">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:7px">
+                <button class="button small" type="button" data-ai-save="groq">Salvar chave</button>
+                <button class="button secondary small" type="button" data-ai-toggle="groq" disabled>Ativar/pausar</button>
+                <a class="button secondary small" href="https://console.groq.com/keys" target="_blank" rel="noopener">Criar chave</a>
+              </div>
+            </div>
+            <div data-ai-provider-card="openrouter" style="padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+                <div><strong style="font-size:11px">OpenRouter Free</strong><small style="display:block;margin-top:3px;color:var(--muted)">openrouter/free · prioridade 3</small></div>
+                <span data-ai-provider-status="openrouter" style="font-size:9px;color:var(--muted)">Verificando...</span>
+              </div>
+              <input class="account-input" data-ai-key="openrouter" type="password" autocomplete="off" placeholder="Cole a chave gratuita do OpenRouter">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:7px">
+                <button class="button small" type="button" data-ai-save="openrouter">Salvar chave</button>
+                <button class="button secondary small" type="button" data-ai-toggle="openrouter" disabled>Ativar/pausar</button>
+                <a class="button secondary small" href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Criar chave</a>
+              </div>
+            </div>
+          </div>
+          <div class="account-status" id="ai-providers-message" role="status" aria-live="polite" style="margin-top:9px"></div>
+          <p style="margin:9px 0 0;color:var(--muted);font-size:9px;line-height:1.5">As chaves ficam criptografadas no Vault do Supabase. Depois de salvar, o painel não mostra a chave novamente.</p>
         </div>
         <div class="account-section" id="store-settings-section">
           <h3>Funcionamento e taxas</h3>
@@ -926,6 +970,7 @@ window.LVAlerts=(()=>{
     panelProfile=profile;
     const isSuper=profile?.role==='superadmin';
     document.querySelector('#remote-update-section').style.display=isSuper?'block':'none';
+    document.querySelector('#ai-providers-section').style.display=isSuper?'block':'none';
     document.querySelector('#account-label').textContent=isSuper?'Super Admin':'Proprietária';
     document.querySelector('#account-avatar').textContent=isSuper?'JJ':'LV';
     document.querySelector('#account-role').textContent=isSuper?'Super Admin':'Proprietária';
@@ -946,6 +991,81 @@ window.LVAlerts=(()=>{
     }
     lucide.createIcons();
   }
+
+  async function voiceAiConfig(action,provider=null,secret=null,enabled=null){
+    const{data,error}=await db.rpc('lv_voice_ai_config',{
+      p_action:action,p_provider:provider,p_secret:secret,p_enabled:enabled
+    });
+    if(error)throw error;
+    return data;
+  }
+
+  function renderVoiceAiProviders(rows=[]){
+    const byProvider=new Map((rows||[]).map(row=>[row.provider,row]));
+    ['gemini','groq','openrouter'].forEach(name=>{
+      const row=byProvider.get(name)||{};
+      const status=document.querySelector(`[data-ai-provider-status="${name}"]`);
+      const toggle=document.querySelector(`[data-ai-toggle="${name}"]`);
+      if(status){
+        status.textContent=row.configured?(row.enabled?'Ativa':'Pausada'):'Sem chave';
+        status.style.color=row.configured&&row.enabled?'var(--lime)':row.configured?'var(--orange-soft)':'var(--muted)';
+      }
+      if(toggle){
+        toggle.disabled=!row.configured;
+        toggle.dataset.aiEnabled=String(Boolean(row.enabled));
+        toggle.textContent=row.enabled?'Pausar':'Ativar';
+      }
+    });
+  }
+
+  async function loadVoiceAiProviders(){
+    if(panelProfile?.role!=='superadmin')return;
+    const message=document.querySelector('#ai-providers-message');
+    try{
+      const result=await voiceAiConfig('status');
+      if(!result?.ok)throw new Error(result?.message||'Falha ao consultar as IAs.');
+      renderVoiceAiProviders(result.providers||[]);
+      if(message){message.textContent='';message.className='account-status'}
+    }catch(error){
+      console.error('Erro ao carregar provedores de IA:',error);
+      if(message){message.textContent='Não foi possível consultar as IAs agora.';message.className='account-status error'}
+    }
+  }
+
+  document.querySelector('#ai-providers-section')?.addEventListener('click',async event=>{
+    const save=event.target.closest('[data-ai-save]');
+    const toggle=event.target.closest('[data-ai-toggle]');
+    if(!save&&!toggle)return;
+    const provider=save?.dataset.aiSave||toggle?.dataset.aiToggle;
+    if(!provider)return;
+    const message=document.querySelector('#ai-providers-message');
+    const button=save||toggle;
+    button.disabled=true;
+    try{
+      if(save){
+        const input=document.querySelector(`[data-ai-key="${provider}"]`);
+        const secret=input?.value?.trim()||'';
+        if(secret.length<10){
+          if(message){message.textContent='Cole uma chave válida antes de salvar.';message.className='account-status error'}
+          return;
+        }
+        if(message){message.textContent='Salvando a chave no Vault...';message.className='account-status'}
+        const result=await voiceAiConfig('save',provider,secret,true);
+        if(!result?.ok)throw new Error(result?.message||'Não foi possível salvar.');
+        input.value='';
+        if(message){message.textContent=result.message||'Chave salva.';message.className='account-status ok'}
+      }else if(toggle){
+        const enabled=toggle.dataset.aiEnabled!=='true';
+        const result=await voiceAiConfig('toggle',provider,null,enabled);
+        if(!result?.ok)throw new Error(result?.message||'Não foi possível alterar.');
+        if(message){message.textContent=enabled?'IA ativada.':'IA pausada.';message.className='account-status ok'}
+      }
+      await loadVoiceAiProviders();
+    }catch(error){
+      console.error('Erro na configuração de IA:',error);
+      if(message){message.textContent=error?.message||'Não foi possível atualizar a IA.';message.className='account-status error'}
+    }finally{button.disabled=false}
+  });
 
   async function enterPanel(profile){
     renderPanelProfile(profile);
@@ -969,6 +1089,7 @@ window.LVAlerts=(()=>{
     panelToken='';
     panelProfile=null;
     document.querySelector('#remote-update-section').style.display='none';
+    document.querySelector('#ai-providers-section').style.display='none';
     localStorage.removeItem(PANEL_SESSION_KEY);
     db=createPanelClient('');
     document.querySelector('#account-modal').classList.remove('show');
@@ -1013,6 +1134,7 @@ window.LVAlerts=(()=>{
       if(!me?.ok){await clearPanelSession({message:'Sua sessão terminou. Entre novamente.'});return}
       renderPanelProfile(me);
       await loadStoreStatus();
+      if(me?.role==='superadmin')await loadVoiceAiProviders();
       document.querySelector('#account-modal').classList.add('show');
       lucide.createIcons();
     }catch(error){
