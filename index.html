@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260919-free-ai-provider-setup-1">
-  <script src="./lv-updates.js?v=20260919-free-ai-provider-setup-1"></script>
+  <meta name="lv-updates-build" content="20260919-printer-app-share-v1">
+  <script src="./lv-updates.js?v=20260919-printer-app-share-v1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -753,7 +753,7 @@ window.LVAlerts=(()=>{
     document.querySelector('#driver-modal').classList.remove('show');await loadDrivers();showToast(id?'Entregador atualizado':'Entregador cadastrado');
   }
   function orderCard(order){
-    const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order),printAction=`<button class="mini-action" data-action="print-order" data-id="${order.id}" aria-label="Imprimir pedido" title="Imprimir pedido"><i data-lucide="printer"></i></button>`;
+    const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order),printAction=`<button class="mini-action" data-action="print-order" data-id="${order.id}" aria-label="Enviar para impressora" title="Enviar para app Impressora"><i data-lucide="printer"></i></button>`;
     return `<article class="order-card ${statusClass(order.status)}" data-order="${order.id}"><div class="order-card-top"><span class="order-number">#${order.id} · ${escapeMenuText(order.orderCode||'Sem código')}</span><span class="order-time">há ${order.minutes} min</span></div><div class="customer">${escapeMenuText(order.customer)}</div><div class="order-meta"><i data-lucide="clock"></i>${order.time} · ${order.type}</div><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="order-info"><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}<div class="info-line"><span>Entrega</span><strong>${order.type}</strong></div>${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}</div><div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div><div class="card-actions">${order.status==='new'?`<button class="button small" data-action="accept" data-id="${order.id}"><i data-lucide="arrow-right"></i>${meta.nextLabel}</button><button class="mini-action" data-action="reject" data-id="${order.id}" aria-label="Recusar pedido"><i data-lucide="x"></i></button>`:deliveryCheck?`<button class="button small" data-action="validate-delivery-code" data-id="${order.id}"><i data-lucide="key-round"></i>Validar código de entrega</button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`:confirmable?`<button class="button small" data-action="confirm-payment" data-id="${order.id}"><i data-lucide="badge-check"></i>Confirmar pagamento</button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`:order.status==='done'||order.status==='cancelled'?`<button class="button small secondary" data-action="details" data-id="${order.id}"><i data-lucide="eye"></i>Ver detalhes</button>`:`<button class="button small" data-action="advance" data-id="${order.id}">${meta.nextLabel}<i data-lucide="arrow-right"></i></button><button class="mini-action" data-action="details" data-id="${order.id}" aria-label="Ver detalhes"><i data-lucide="eye"></i></button>`}${printAction}</div></article>`;
   }
   function boardColumn(status,title,ordersToShow){return `<section class="order-column column-${status==='new'?'new':status==='accepted'?'accepted':status==='prep'?'prep':status==='ready'?'ready':'other'}"><div class="column-head"><div class="column-title">${title}</div><span class="column-count">${ordersToShow.length}</span></div><div class="column-list">${ordersToShow.length?ordersToShow.map(orderCard).join(''):'<div class="empty-column">Nenhum pedido aqui</div>'}</div></section>`}
@@ -799,7 +799,7 @@ window.LVAlerts=(()=>{
   function openDetails(id){
     const order=orders.find(item=>item.id===id);if(!order)return;
     const meta=orderStatusMeta(order),deliveryCheck=needsDeliveryConfirmation(order),confirmable=canConfirmPayment(order);
-    document.querySelector('#modal-content').innerHTML=`<div class="detail-summary"><strong>Pedido #${order.id} · ${escapeMenuText(order.orderCode||'Sem código')} · ${statusMeta[order.status].label}</strong><span>${escapeMenuText(order.customer)} · ${order.time} · ${escapeMenuText(order.type)}</span><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}<div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div></div><div class="modal-actions">${order.status==='new'?`<button class="button" data-action="accept" data-id="${order.id}">${meta.nextLabel}</button>`:deliveryCheck?`<button class="button" data-action="validate-delivery-code" data-id="${order.id}">Validar código de entrega</button>`:confirmable?`<button class="button" data-action="confirm-payment" data-id="${order.id}">Confirmar pagamento</button>`:!['done','cancelled'].includes(order.status)&&meta.next?`<button class="button" data-action="advance" data-id="${order.id}">${meta.nextLabel}</button>`:''}<button class="button secondary" data-action="print-order" data-id="${order.id}"><i data-lucide="printer"></i>Imprimir pedido</button><button class="button secondary" data-close-modal>Fechar</button></div>`;
+    document.querySelector('#modal-content').innerHTML=`<div class="detail-summary"><strong>Pedido #${order.id} · ${escapeMenuText(order.orderCode||'Sem código')} · ${statusMeta[order.status].label}</strong><span>${escapeMenuText(order.customer)} · ${order.time} · ${escapeMenuText(order.type)}</span><div class="item-list">${order.items.map(item=>`<div class="item"><strong>${item.qty}x ${escapeMenuText(item.name)}</strong>${item.detail?`<span>- ${escapeMenuText(item.detail)}</span>`:''}</div>`).join('')}</div><div class="info-line"><span>Pagamento</span><strong>${escapeMenuText(order.payment)}</strong></div>${deliveryCheck?`<div class="info-line"><span>Código de entrega</span><strong>Aguardando validação</strong></div>`:order.deliveryCodeRequired&&order.deliveryVerifiedAt?`<div class="info-line"><span>Código de entrega</span><strong>Validado</strong></div>`:''}${confirmable?`<div class="info-line"><span>Status do pagamento</span><strong>Pendente</strong></div>`:order.status==='done'?`<div class="info-line"><span>Status do pagamento</span><strong>Confirmado</strong></div>`:''}${order.type==='Entrega'?`<div class="info-line" data-lv-delivery-address><span>Endereço</span><strong>${escapeMenuText(order.address||'Não informado')}</strong></div>`:''}<div class="total-line"><span>Total</span><strong>${money(order.total)}</strong></div></div><div class="modal-actions">${order.status==='new'?`<button class="button" data-action="accept" data-id="${order.id}">${meta.nextLabel}</button>`:deliveryCheck?`<button class="button" data-action="validate-delivery-code" data-id="${order.id}">Validar código de entrega</button>`:confirmable?`<button class="button" data-action="confirm-payment" data-id="${order.id}">Confirmar pagamento</button>`:!['done','cancelled'].includes(order.status)&&meta.next?`<button class="button" data-action="advance" data-id="${order.id}">${meta.nextLabel}</button>`:''}<button class="button secondary" data-action="print-order" data-id="${order.id}"><i data-lucide="printer"></i>Enviar para app Impressora</button><button class="button secondary" data-action="system-print-order" data-id="${order.id}">Impressão do sistema</button><button class="button secondary" data-close-modal>Fechar</button></div>`;
     document.querySelector('#detail-modal').classList.add('show');lucide.createIcons();
   }
   function showToast(text){const toast=document.querySelector('#toast')||document.createElement('div');toast.id='toast';toast.className='notification show';toast.innerHTML=`<div class="notification-icon"><i data-lucide="check"></i></div><div class="notification-copy"><strong>${escapeMenuText(text)}</strong><span>Central de pedidos</span></div>`;if(!toast.parentNode)document.body.appendChild(toast);lucide.createIcons();setTimeout(()=>toast.remove(),2400)}
@@ -810,7 +810,7 @@ window.LVAlerts=(()=>{
     if(target==='promotions')loadRealMenu();
   }
   function switchView(view){document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`view-${view}`));if(view==='orders')renderBoard('orders-board');if(view==='menu'){switchMenuSubview('products');loadRealMenu()}if(view==='drivers')loadDrivers();window.scrollTo({top:0,behavior:'smooth'})}
-  document.addEventListener('click',event=>{const menuSubtab=event.target.closest('[data-menu-subview]');if(menuSubtab){switchMenuSubview(menuSubtab.dataset.menuSubview);return}const nav=event.target.closest('[data-view]');if(nav)switchView(nav.dataset.view);const jump=event.target.closest('[data-view-jump]');if(jump)switchView(jump.dataset.viewJump);const refresh=event.target.closest('[data-refresh-orders]');if(refresh)loadRealOrders();const action=event.target.closest('[data-action]');if(action){const id=Number(action.dataset.id);if(action.dataset.action==='accept')updateStatus(id,'prep');if(action.dataset.action==='advance'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta&&meta.next)updateStatus(id,meta.next)}if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='validate-delivery-code')validateDeliveryCode(id);if(action.dataset.action==='confirm-payment')confirmPayment(id);if(action.dataset.action==='details')openDetails(id);if(action.dataset.action==='print-order')window.LVPrinting?.printNormal(id)}if(event.target.closest('[data-close-modal]')||event.target.id==='detail-modal')document.querySelector('#detail-modal').classList.remove('show');});
+  document.addEventListener('click',event=>{const menuSubtab=event.target.closest('[data-menu-subview]');if(menuSubtab){switchMenuSubview(menuSubtab.dataset.menuSubview);return}const nav=event.target.closest('[data-view]');if(nav)switchView(nav.dataset.view);const jump=event.target.closest('[data-view-jump]');if(jump)switchView(jump.dataset.viewJump);const refresh=event.target.closest('[data-refresh-orders]');if(refresh)loadRealOrders();const action=event.target.closest('[data-action]');if(action){const id=Number(action.dataset.id);if(action.dataset.action==='accept')updateStatus(id,'prep');if(action.dataset.action==='advance'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta&&meta.next)updateStatus(id,meta.next)}if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='validate-delivery-code')validateDeliveryCode(id);if(action.dataset.action==='confirm-payment')confirmPayment(id);if(action.dataset.action==='details')openDetails(id);if(action.dataset.action==='print-order')window.LVPrinting?.printPreferred(id);if(action.dataset.action==='system-print-order')window.LVPrinting?.printNormal(id)}if(event.target.closest('[data-close-modal]')||event.target.id==='detail-modal')document.querySelector('#detail-modal').classList.remove('show');});
   document.addEventListener('click',event=>{
     const addProduct=event.target.closest('[data-add-product]');if(addProduct){openProductCreator();return}
     const editProduct=event.target.closest('[data-edit-product]');if(editProduct){openProductEditor(editProduct.dataset.editProduct);return}
@@ -2090,22 +2090,7 @@ window.LVAlerts=(()=>{
 <section id="lv-print-sheet" aria-hidden="true"></section>
 <script id="lv-printing-module">
 (()=>{
-  // ---------------------------------------------------------
-  // DELIVERY LV — IMPRESSÃO
-  // MODO ENTREGUE AO CLIENTE: impressão normal/manual.
-  // AutoPrint/RawBT ficam preparados, ocultos e DESLIGADOS
-  // até o modelo da impressora ser confirmado.
-  // ---------------------------------------------------------
-  const CONFIG=Object.freeze({
-    autoPrintEnabled:false,
-    autoPrintMode:'download', // 'download' (AutoPrint watcher) ou 'rawbt'
-    rawBtEnabled:false,
-    rawBtPackage:'ru.a402d.rawbtprinter',
-    receiptWidth:32,
-    skipLocalOrders:true
-  });
-  const SENT_KEY='deliverylv_autoprint_sent_v1';
-  const queue=[];
+  const CONFIG=Object.freeze({receiptWidth:32,preferredMode:'android-share'});
 
   const clean=value=>String(value??'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();
   const moneyText=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -2114,6 +2099,7 @@ window.LVAlerts=(()=>{
   const formatDate=value=>{try{return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value))}catch{return''}};
 
   function orderById(id){return Array.isArray(orders)?orders.find(order=>Number(order.id)===Number(id)):null}
+
   function buildReceipt(order){
     if(!order)return'';
     const lines=[center('DELIVERY LV'),sep(),`PEDIDO #${order.id}`];
@@ -2136,71 +2122,91 @@ window.LVAlerts=(()=>{
   }
 
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+
   function printNormal(id){
-    const order=orderById(id);if(!order){showToast?.('Pedido não encontrado');return false}
-    const sheet=document.querySelector('#lv-print-sheet');if(!sheet)return false;
+    const order=orderById(id);
+    if(!order){showToast?.('Pedido não encontrado');return false}
+    const sheet=document.querySelector('#lv-print-sheet');
+    if(!sheet)return false;
     sheet.innerHTML=`<pre>${escapeHtml(buildReceipt(order))}</pre>`;
     document.body.classList.add('lv-printing');
     const cleanup=()=>{document.body.classList.remove('lv-printing');sheet.innerHTML='';window.removeEventListener('afterprint',cleanup)};
     window.addEventListener('afterprint',cleanup);
-    try{window.print();window.setTimeout(()=>{if(document.body.classList.contains('lv-printing'))cleanup()},2500);return true}catch(error){cleanup();console.error('Impressão normal indisponível',error);showToast?.('Não foi possível abrir a impressão');return false}
-  }
-
-  function sentIds(){try{return new Set(JSON.parse(sessionStorage.getItem(SENT_KEY)||'[]').map(String))}catch{return new Set()}}
-  function wasSent(id){return sentIds().has(String(id))}
-  function markSent(id){try{const ids=sentIds();ids.add(String(id));sessionStorage.setItem(SENT_KEY,JSON.stringify([...ids].slice(-200)))}catch(error){console.warn('Deduplicação de AutoPrint limitada à sessão atual',error)}}
-
-  function saveAutoPrintFile(order){
-    if(!order||wasSent(order.id))return true;
-    const text=buildReceipt(order).replace(/\r?\n/g,'\r\n');
-    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
-    const url=URL.createObjectURL(blob);
-    const link=document.createElement('a');
-    link.href=url;link.download=`DELIVERY_LV_PEDIDO_${String(order.id).padStart(4,'0')}.txt`;link.style.display='none';
-    document.body.appendChild(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),10000);
-    markSent(order.id);return true;
-  }
-
-  function utf8Base64(text){const bytes=new TextEncoder().encode(text);let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));return btoa(binary)}
-  function rawBtIntent(order){
-    const base64=utf8Base64(buildReceipt(order));
-    const dataUri='data:text/plain;base64,'+base64;
-    return 'intent:'+encodeURI(dataUri)+'#Intent;scheme=rawbt;package='+CONFIG.rawBtPackage+';end;';
-  }
-  function rawBtDirect(order){return 'rawbt:data:text/plain;base64,'+utf8Base64(buildReceipt(order))}
-  function sendRawBt(order){
-    if(!CONFIG.rawBtEnabled||!order||wasSent(order.id))return false;
-    if(!/Android/i.test(navigator.userAgent))return false;
-    const intent=rawBtIntent(order);
-    try{window.location.href=intent;markSent(order.id);return true}catch(error){console.warn('RawBT intent falhou',error);try{window.location.href=rawBtDirect(order);markSent(order.id);return true}catch{return false}}
-  }
-
-  function eligible(order){
-    if(!order||order.status!=='new')return false;
-    if(CONFIG.skipLocalOrders&&String(order.type||'').toLowerCase().includes('local'))return false;
-    return !wasSent(order.id);
-  }
-  function auto(order){
-    if(!CONFIG.autoPrintEnabled||!eligible(order))return false;
     try{
-      const ok=CONFIG.autoPrintMode==='rawbt'?sendRawBt(order):saveAutoPrintFile(order);
-      if(!ok&&!queue.some(item=>Number(item.id)===Number(order.id)))queue.push(order);
-      return ok;
-    }catch(error){console.error('Falha no AutoPrint',error);if(!queue.some(item=>Number(item.id)===Number(order.id)))queue.push(order);return false}
+      window.print();
+      window.setTimeout(()=>{if(document.body.classList.contains('lv-printing'))cleanup()},3000);
+      return true;
+    }catch(error){
+      cleanup();
+      console.error('Impressão normal indisponível',error);
+      showToast?.('Não foi possível abrir a impressão');
+      return false;
+    }
   }
-  function retryQueue(){if(!CONFIG.autoPrintEnabled||!queue.length)return false;const order=queue.shift();return auto(order)}
 
-  // Detect only genuinely new orders after the first panel load.
-  const originalLoad=loadRealOrders;
-  loadRealOrders=async function(options={}){
-    const before=new Set((orders||[]).map(order=>String(order.id)));
-    const detect=CONFIG.autoPrintEnabled&&options?.notify!==false;
-    const result=await originalLoad(options);
-    if(detect)(orders||[]).filter(order=>!before.has(String(order.id))).forEach(auto);
-    return result;
+  async function copyReceipt(order){
+    const text=buildReceipt(order);
+    try{
+      await navigator.clipboard.writeText(text);
+      showToast?.('Comanda copiada. Cole em Notas no app Impressora.');
+      return true;
+    }catch(error){
+      console.warn('Não foi possível copiar a comanda',error);
+      return false;
+    }
+  }
+
+  async function shareToPrinterApp(id){
+    const order=orderById(id);
+    if(!order){showToast?.('Pedido não encontrado');return false}
+    const text=buildReceipt(order);
+    const fileName=`DELIVERY_LV_PEDIDO_${String(order.id).padStart(4,'0')}.txt`;
+
+    if(!navigator.share){
+      const copied=await copyReceipt(order);
+      if(!copied)showToast?.('Compartilhamento não disponível neste aparelho');
+      return copied;
+    }
+
+    const file=new File([text],fileName,{type:'text/plain;charset=utf-8'});
+    try{
+      if(!navigator.canShare||navigator.canShare({files:[file]})){
+        await navigator.share({
+          title:`Delivery LV · Pedido #${order.id}`,
+          text:'Comanda do Delivery LV',
+          files:[file]
+        });
+      }else{
+        await navigator.share({
+          title:`Delivery LV · Pedido #${order.id}`,
+          text
+        });
+      }
+      return true;
+    }catch(error){
+      if(error?.name==='AbortError')return false;
+      console.warn('Compartilhamento com app de impressão falhou',error);
+      const copied=await copyReceipt(order);
+      if(!copied)showToast?.('Não foi possível enviar a comanda ao app Impressora');
+      return copied;
+    }
+  }
+
+  async function printPreferred(id){
+    if(/Android/i.test(navigator.userAgent)&&CONFIG.preferredMode==='android-share'){
+      return await shareToPrinterApp(id);
+    }
+    return printNormal(id);
+  }
+
+  window.LVPrinting={
+    config:CONFIG,
+    buildReceipt,
+    printNormal,
+    shareToPrinterApp,
+    printPreferred,
+    copyReceipt:(id)=>{const order=orderById(id);return order?copyReceipt(order):false}
   };
-
-  window.LVPrinting={config:CONFIG,printNormal,buildReceipt,retryQueue,_queue:queue};
 })();
 </script>
 
