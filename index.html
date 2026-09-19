@@ -2090,22 +2090,16 @@ window.LVAlerts=(()=>{
 <section id="lv-print-sheet" aria-hidden="true"></section>
 <script id="lv-printing-module">
 (()=>{
-  // DELIVERY LV — IMPRESSAO DIRETA VIA RAWBT
-  // RawBT recebe ESC/POS pelo esquema rawbt:base64,... e envia para a impressora configurada no app.
-  const CONFIG=Object.freeze({
-    receiptWidth:32,
-    rawbtPackage:'ru.a402d.rawbtprinter',
-    rawbtScheme:'rawbt:',
-    rawbtPlayUrl:'https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter'
-  });
-  const READY_KEY='deliverylv_rawbt_ready_v1';
+  // DELIVERY LV — IMPRESSAO MANUAL PELO SERVICO DE IMPRESSAO DO ANDROID / RAWBT
+  // Fluxo: toca no icone -> abre a tela de impressao -> toca em Imprimir.
+  // Sem autoprint, sem WebSocket, sem deep-link e sem envio automatico.
+  const CONFIG=Object.freeze({receiptWidth:32,mode:'android-print-service'});
 
   const clean=value=>String(value??'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();
   const moneyText=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const sep=()=>'-'.repeat(CONFIG.receiptWidth);
   const center=value=>{const text=clean(value).slice(0,CONFIG.receiptWidth);const left=Math.max(0,Math.floor((CONFIG.receiptWidth-text.length)/2));return ' '.repeat(left)+text};
   const formatDate=value=>{try{return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value))}catch{return''}};
-  const ascii=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^ -~\n]/g,'?');
 
   function orderById(id){return Array.isArray(orders)?orders.find(order=>Number(order.id)===Number(id)):null}
 
@@ -2132,141 +2126,59 @@ window.LVAlerts=(()=>{
     return lines.join('\n');
   }
 
-  function escposBytes(order){
-    const text=ascii(buildReceipt(order));
-    const body=Array.from(text,ch=>ch.charCodeAt(0)&0x7f);
-    return new Uint8Array([
-      0x1b,0x40,
-      0x1b,0x61,0x00,
-      ...body,
-      0x0a,0x0a,0x0a,0x0a
-    ]);
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
-
-  function bytesToBase64(bytes){
-    let binary='';
-    const chunk=0x8000;
-    for(let i=0;i<bytes.length;i+=chunk){
-      binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
-    }
-    return btoa(binary);
-  }
-
-  function openRawBt(bytes){
-    try{
-      const payload=bytesToBase64(bytes);
-      const uri=`${CONFIG.rawbtScheme}base64,${payload}`;
-      localStorage.setItem(READY_KEY,'1');
-      window.location.href=uri;
-      return true;
-    }catch(error){
-      console.error('Falha ao chamar RawBT',error);
-      showToast?.('Não consegui abrir o RawBT');
-      showRawBtSetup();
-      return false;
-    }
-  }
-
-  function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 
   function printNormal(id){
     const order=orderById(id);
     if(!order){showToast?.('Pedido não encontrado');return false}
     const sheet=document.querySelector('#lv-print-sheet');
-    if(!sheet)return false;
+    if(!sheet){showToast?.('Área de impressão indisponível');return false}
+
     sheet.innerHTML=`<pre>${escapeHtml(buildReceipt(order))}</pre>`;
     document.body.classList.add('lv-printing');
-    const cleanup=()=>{document.body.classList.remove('lv-printing');sheet.innerHTML='';window.removeEventListener('afterprint',cleanup)};
-    window.addEventListener('afterprint',cleanup);
+
+    let cleaned=false;
+    const cleanup=()=>{
+      if(cleaned)return;
+      cleaned=true;
+      document.body.classList.remove('lv-printing');
+      sheet.innerHTML='';
+      window.removeEventListener('afterprint',cleanup);
+    };
+
+    window.addEventListener('afterprint',cleanup,{once:true});
     try{
+      // O Android abre a tela de impressão. Com o RawBT já configurado,
+      // o usuário apenas confirma tocando em "Imprimir".
       window.print();
-      window.setTimeout(()=>{if(document.body.classList.contains('lv-printing'))cleanup()},3000);
+      window.setTimeout(cleanup,12000);
       return true;
     }catch(error){
       cleanup();
-      console.error('Impressão normal indisponível',error);
-      showToast?.('Não foi possível abrir a impressão');
+      console.error('Impressão indisponível',error);
+      showToast?.('Não foi possível abrir a tela de impressão');
       return false;
     }
   }
 
-  function directPrint(id){
-    const order=orderById(id);
-    if(!order){showToast?.('Pedido não encontrado');return false}
-    const ok=openRawBt(escposBytes(order));
-    if(ok)showToast?.(`Pedido #${order.id} enviado ao RawBT`);
-    return ok;
-  }
-
-  function testDirect(){
-    const testText='\n        DELIVERY LV\n'+
-      '--------------------------------\n'+
-      'TESTE DE IMPRESSAO RAWBT\n'+
-      'Se este papel saiu, esta pronto.\n'+
-      '--------------------------------\n\n\n\n';
-    const body=Array.from(ascii(testText),ch=>ch.charCodeAt(0)&0x7f);
-    const bytes=new Uint8Array([0x1b,0x40,0x1b,0x61,0x00,...body,0x0a,0x0a,0x0a]);
-    return openRawBt(bytes);
-  }
-
-  function hideRawBtSetup(){document.querySelector('#lv-rawbt-setup')?.remove()}
-
-  function rawBtSetupMarkup(){
-    return `
-      <div id="lv-rawbt-setup" style="position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:20px;background:#000b">
-        <div style="width:min(430px,100%);padding:20px;border:1px solid #ffffff20;border-radius:16px;background:#1c1917;color:#fff;box-shadow:0 24px 80px #000c">
-          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-            <div><strong style="display:block;font-size:18px">Impressão pelo RawBT</strong><span style="display:block;margin-top:5px;color:#aaa;font-size:11px;line-height:1.5">A impressora só precisa estar configurada no RawBT.</span></div>
-            <button id="lv-rawbt-close" type="button" style="width:36px;height:36px;border:0;border-radius:9px;background:#ffffff0d;color:#fff;font-size:20px">×</button>
-          </div>
-          <div style="margin-top:15px;padding:12px;border-radius:10px;background:#26211e;color:#ddd;font-size:12px;line-height:1.65">
-            1. Abra o <b>RawBT</b> e deixe a impressora configurada como padrão.<br>
-            2. Volte ao Delivery LV.<br>
-            3. Toque em <b>Imprimir teste</b>.<br><br>
-            Se o papel sair, depois basta tocar no ícone da impressora em qualquer pedido.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
-            <button id="lv-rawbt-install" type="button" style="min-height:44px;border:0;border-radius:10px;background:#302a26;color:#fff;font-weight:800">Abrir RawBT</button>
-            <button id="lv-rawbt-test" type="button" style="min-height:44px;border:0;border-radius:10px;background:#d9f15c;color:#17140f;font-weight:900">Imprimir teste</button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  function showRawBtSetup(){
-    if(document.querySelector('#lv-rawbt-setup'))return;
-    document.body.insertAdjacentHTML('beforeend',rawBtSetupMarkup());
-    document.querySelector('#lv-rawbt-close')?.addEventListener('click',hideRawBtSetup);
-    document.querySelector('#lv-rawbt-test')?.addEventListener('click',testDirect);
-    document.querySelector('#lv-rawbt-install')?.addEventListener('click',()=>{
-      try{
-        window.location.href='rawbt:';
-        setTimeout(()=>{
-          if(document.visibilityState==='visible')window.open(CONFIG.rawbtPlayUrl,'_blank','noopener');
-        },900);
-      }catch(error){
-        window.open(CONFIG.rawbtPlayUrl,'_blank','noopener');
-      }
-    });
-  }
-
-  function printPreferred(id){
-    const isAndroid=/Android/i.test(navigator.userAgent);
-    if(!isAndroid)return printNormal(id);
-    return directPrint(id);
-  }
+  // Mantemos estes nomes para não quebrar chamadas antigas do painel.
+  const printPreferred=printNormal;
+  const directPrint=printNormal;
+  const testDirect=()=>{showToast?.('Use o ícone de impressão de um pedido para testar o RawBT.');return true};
+  const noop=()=>{};
 
   window.LVPrinting={
     config:CONFIG,
     buildReceipt,
-    escposBytes,
     printNormal,
     directPrint,
     printPreferred,
     testDirect,
-    showRawBtSetup,
-    showDirectSetup:showRawBtSetup,
-    isConfigured:()=>localStorage.getItem(READY_KEY)==='1'
+    showRawBtSetup:noop,
+    showDirectSetup:noop,
+    isConfigured:()=>true
   };
 })();
 </script>
