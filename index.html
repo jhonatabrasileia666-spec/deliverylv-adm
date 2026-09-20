@@ -2090,13 +2090,13 @@ window.LVAlerts=(()=>{
 <section id="lv-print-sheet" aria-hidden="true"></section>
 <script id="lv-printing-module">
 (()=>{
-  // DELIVERY LV — IMPRESSAO DIRETA PELO RAWBT
-  // Fluxo: toca no icone -> Android abre o RawBT com a comanda ESC/POS.
-  // Sem window.print(), sem PDF, sem WebSocket e sem Mharmal.
+  // DELIVERY LV — ENVIO DA COMANDA PARA O APP "IMPRESSORA" DO ANDROID
+  // Alvo principal: Impressora: Imprimir Documento (tech.kma.smart.printer).
+  // Se o Android não aceitar o intent direto, abre o compartilhamento como fallback.
   const CONFIG=Object.freeze({
     receiptWidth:32,
-    rawbtScheme:'rawbt:',
-    rawbtPackage:'ru.a402d.rawbtprinter'
+    printerPackage:'tech.kma.smart.printer',
+    mode:'printer-app-share'
   });
 
   const clean=value=>String(value??'').replace(/[\r\n\t]+/g,' ').replace(/\s{2,}/g,' ').trim();
@@ -2116,10 +2116,6 @@ window.LVAlerts=(()=>{
       }).format(new Date(value));
     }catch{return''}
   };
-  const ascii=value=>String(value??'')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^ -~\n]/g,'?');
 
   function orderById(id){
     return Array.isArray(orders)
@@ -2129,6 +2125,7 @@ window.LVAlerts=(()=>{
 
   function buildReceipt(order){
     if(!order)return'';
+
     const lines=[
       center('DELIVERY LV'),
       sep(),
@@ -2154,7 +2151,10 @@ window.LVAlerts=(()=>{
     (order.items||[]).forEach(item=>{
       const qty=Math.max(1,Number(item.qty||1));
       lines.push(`${qty}x ${clean(item.name||'Item')}`);
-      if(item.detail)lines.push(`  ${clean(item.detail)}`);
+
+      if(item.detail){
+        lines.push(`  ${clean(item.detail)}`);
+      }
 
       const unit=Number(item.price||0);
       if(Number.isFinite(unit)&&unit>0){
@@ -2175,79 +2175,114 @@ window.LVAlerts=(()=>{
     return lines.join('\n');
   }
 
-  function escposBytes(order){
-    const text=ascii(buildReceipt(order));
-    const body=Array.from(text,ch=>ch.charCodeAt(0)&0x7f);
+  async function shareFallback(order){
+    const text=buildReceipt(order);
 
-    return new Uint8Array([
-      0x1b,0x40,       // inicializa
-      0x1b,0x61,0x00,  // alinhamento esquerda
-      ...body,
-      0x0a,0x0a,0x0a,0x0a
-    ]);
-  }
-
-  function bytesToBase64(bytes){
-    let binary='';
-    const chunk=0x8000;
-    for(let i=0;i<bytes.length;i+=chunk){
-      binary+=String.fromCharCode(...bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+    if(navigator.share){
+      try{
+        await navigator.share({
+          title:`Delivery LV - Pedido #${order.id}`,
+          text
+        });
+        return true;
+      }catch(error){
+        if(error?.name==='AbortError')return false;
+        console.warn('Compartilhamento indisponível',error);
+      }
     }
-    return btoa(binary);
-  }
 
-  function openRawBT(bytes){
     try{
-      const base64=bytesToBase64(bytes);
-      // Formato documentado pelo RawBT para dados RAW/ESC-POS.
-      window.location.href=`${CONFIG.rawbtScheme}base64,${base64}`;
+      await navigator.clipboard.writeText(text);
+      showToast?.('Comanda copiada. Abra o app Impressora e cole em Notas.');
       return true;
     }catch(error){
-      console.error('Falha ao abrir RawBT',error);
-      showToast?.('Não consegui abrir o RawBT');
+      console.warn('Falha ao copiar comanda',error);
+      showToast?.('Não consegui enviar a comanda ao app Impressora');
       return false;
     }
   }
 
-  function printRawBT(id){
+  function buildPrinterIntent(order){
+    const subject=encodeURIComponent(`Delivery LV - Pedido #${order.id}`);
+    const text=encodeURIComponent(buildReceipt(order));
+
+    return `intent:#Intent;action=android.intent.action.SEND;type=text/plain;package=${CONFIG.printerPackage};S.android.intent.extra.SUBJECT=${subject};S.android.intent.extra.TEXT=${text};end`;
+  }
+
+  async function printPreferred(id){
     const order=orderById(id);
+
     if(!order){
       showToast?.('Pedido não encontrado');
       return false;
     }
-    return openRawBT(escposBytes(order));
+
+    if(!/Android/i.test(navigator.userAgent)){
+      return shareFallback(order);
+    }
+
+    let fallbackStarted=false;
+    const fallback=async()=>{
+      if(fallbackStarted)return;
+      fallbackStarted=true;
+      await shareFallback(order);
+    };
+
+    const timer=setTimeout(()=>{
+      if(document.visibilityState==='visible')fallback();
+    },1400);
+
+    try{
+      window.location.href=buildPrinterIntent(order);
+      showToast?.(`Abrindo app Impressora para o pedido #${order.id}`);
+      return true;
+    }catch(error){
+      clearTimeout(timer);
+      console.warn('Falha ao abrir app Impressora',error);
+      return fallback();
+    }
   }
 
-  function testRawBT(){
-    const text=[
-      center('DELIVERY LV'),
-      sep(),
-      'TESTE RAWBT',
-      'Se este papel saiu, esta pronto.',
-      sep(),
-      '',
-      '',
-      ''
-    ].join('\n');
+  function testDirect(){
+    const fake={
+      id:'TESTE',
+      orderCode:'TESTE',
+      createdAt:new Date().toISOString(),
+      customer:'Teste Delivery LV',
+      phone:'',
+      type:'Retirada no balcão',
+      payment:'A confirmar',
+      items:[{qty:1,name:'TESTE DE IMPRESSAO',detail:'',price:1}],
+      total:1
+    };
 
-    const body=Array.from(ascii(text),ch=>ch.charCodeAt(0)&0x7f);
-    return openRawBT(new Uint8Array([
-      0x1b,0x40,
-      0x1b,0x61,0x00,
-      ...body,
-      0x0a,0x0a,0x0a
-    ]));
+    let fallbackStarted=false;
+    const fallback=async()=>{
+      if(fallbackStarted)return;
+      fallbackStarted=true;
+      await shareFallback(fake);
+    };
+
+    const timer=setTimeout(()=>{
+      if(document.visibilityState==='visible')fallback();
+    },1400);
+
+    try{
+      window.location.href=buildPrinterIntent(fake);
+      return true;
+    }catch(error){
+      clearTimeout(timer);
+      return fallback();
+    }
   }
 
-  // Compatibilidade com os botões existentes do painel.
   window.LVPrinting={
     config:CONFIG,
     buildReceipt,
-    escposBytes,
-    printNormal:printRawBT,
-    directPrint:printRawBT,
-    printPreferred:printRawBT,
-    testDirect:testRawBT,
+    printNormal:printPreferred,
+    directPrint:printPreferred,
+    printPreferred,
+    testDirect,
     showRawBtSetup:()=>{},
     showDirectSetup:()=>{},
     isConfigured:()=>true
