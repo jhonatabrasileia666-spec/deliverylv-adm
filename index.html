@@ -273,18 +273,16 @@
   <div class="app" id="panel-app">
     <header class="topbar"><div class="topbar-inner"><a class="brand" href="#" aria-label="Delivery LV"><span class="brand-mark">LV</span><span class="brand-copy"><strong>DELIVERY</strong><small>pizzaria & esfiharia</small></span></a><div class="top-right"><span class="top-status"><i class="live-dot"></i>Operação ativa</span><button class="button secondary small store-toggle" id="store-toggle-button" type="button" title="Alterar status da loja"><i data-lucide="store"></i><span>Carregando loja...</span></button><button class="button secondary small lv-alert-toggle" data-enable-alerts type="button"><i data-lucide="bell-ring"></i><span>Ativar alertas</span></button><button class="button secondary small" id="push-test-local" type="button" title="Testar notificação neste aparelho"><i data-lucide="badge-check"></i><span>Testar notificação</span></button><button class="button secondary small" id="switch-login-button" type="button"><i data-lucide="log-in"></i>Trocar acesso</button><button class="user" id="account-button" type="button" aria-label="Abrir conta"><span id="account-label">Conta</span><span class="avatar" id="account-avatar">LV</span></button></div></div></header>
     <div class="layout">
-      <aside class="sidebar"><div class="nav-label">Operação</div><nav class="nav"><button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Visão geral</span></button><button class="nav-item" data-view="orders"><i data-lucide="inbox"></i><span>Pedidos</span><b class="nav-count" id="new-count">2</b></button><button class="nav-item" data-view="menu"><i data-lucide="book-open"></i><span>Cardápio</span></button><button class="nav-item" data-view="drivers"><i data-lucide="bike"></i><span>Entregadores</span></button><button class="nav-item" data-view="history"><i data-lucide="archive"></i><span>Histórico</span></button></nav><div class="sidebar-bottom">Central local de pedidos<br><strong>Atualizado agora</strong></div></aside>
+      <aside class="sidebar"><div class="nav-label">Operação</div><nav class="nav"><button class="nav-item active" data-view="overview"><i data-lucide="layout-dashboard"></i><span>Visão geral</span></button><button class="nav-item" data-view="orders"><i data-lucide="inbox"></i><span>Pedidos</span><b class="nav-count" id="new-count">2</b></button><button class="nav-item" data-view="menu"><i data-lucide="book-open"></i><span>Cardápio</span></button><button class="nav-item" data-view="history"><i data-lucide="archive"></i><span>Histórico</span></button></nav><div class="sidebar-bottom">Central local de pedidos<br><strong>Atualizado agora</strong></div></aside>
       <main class="main">
         <section class="view active" id="view-overview"><div class="page-head"><div><span class="eyebrow">Central operacional</span><h1>Visão geral</h1><p>Acompanhe o ritmo da loja e cuide do próximo pedido.</p></div><div class="head-actions"><button class="button" data-refresh-orders><i data-lucide="refresh-cw"></i>Atualizar pedidos</button></div></div><div class="stat-row"><div class="stat stat-highlight"><div class="stat-top"><span>Pedidos novos</span><i data-lucide="bell-ring"></i></div><div class="stat-value" id="stat-new">0</div><div class="stat-note">aguardando aceite</div></div><div class="stat"><div class="stat-top"><span>Saiu para entrega</span><i data-lucide="bike"></i></div><div class="stat-value" id="stat-delivery">0</div><div class="stat-note">a caminho do cliente</div></div><div class="stat"><div class="stat-top"><span>Prontos</span><i data-lucide="package-check"></i></div><div class="stat-value" id="stat-ready">0</div><div class="stat-note">aguardando retirada</div></div><div class="stat"><div class="stat-top"><span>Vendas hoje</span><i data-lucide="banknote"></i></div><div class="stat-value" id="stat-sales">R$ 0</div><div class="stat-note">pedidos finalizados</div></div></div><div class="order-toolbar"><h2>Pedidos em andamento</h2><button class="button secondary small" data-view-jump="orders">Ver central de pedidos <i data-lucide="arrow-right"></i></button></div><div class="order-grid" id="overview-orders"></div></section>
         <section class="view" id="view-orders"><div class="page-head"><div><span class="eyebrow">Fila de produção</span><h1>Pedidos</h1><p>Uma visão clara do que precisa acontecer agora.</p></div><div class="head-actions"><button class="button" data-refresh-orders><i data-lucide="refresh-cw"></i>Atualizar pedidos</button></div></div><div class="order-toolbar"><h2>Fluxo de pedidos</h2><div class="order-filters"><button class="filter active" data-filter="all">Todos</button><button class="filter" data-filter="new">Novos</button><button class="filter" data-filter="delivery">Saiu para entrega</button><button class="filter" data-filter="ready">Prontos</button></div></div><div class="order-grid" id="orders-board"></div></section>
         <section class="view" id="view-menu"><div class="page-head"><div><span class="eyebrow">Gestão do cardápio</span><h1>Cardápio</h1><p>Gerencie produtos e promoções sem misturar as duas áreas.</p></div></div><div class="menu-subtabs" role="tablist" aria-label="Áreas do cardápio"><button class="menu-subtab active" type="button" role="tab" aria-selected="true" data-menu-subview="products"><i data-lucide="book-open"></i><span>Produtos</span></button><button class="menu-subtab" type="button" role="tab" aria-selected="false" data-menu-subview="promotions"><i data-lucide="badge-percent"></i><span>Promoções</span></button></div><div class="menu-subview active" id="menu-subview-products" data-menu-panel="products"><div class="menu-subview-actions"><div><span class="eyebrow">Produtos cadastrados</span><p class="menu-help">Adicione e edite produtos, tamanhos, preços, fotos, acréscimos e disponibilidade.</p></div><div class="head-actions"><button class="button" data-add-product type="button"><i data-lucide="plus"></i>Adicionar produto</button><button class="button secondary" data-refresh-menu type="button"><i data-lucide="refresh-cw"></i>Atualizar cardápio</button></div></div><div class="menu-table"><div class="table-head"><span>Produto</span><span>Categoria</span><span>Preço</span><span>Acréscimo</span><span>Disponibilidade</span><span></span></div></div></div><div class="menu-subview" id="menu-subview-promotions" data-menu-panel="promotions"><div class="menu-subview-actions"><div><span class="eyebrow">Ofertas e destaques</span><p class="menu-help">Escolha produto, tamanho e desconto para destacar no cardápio do cliente.</p></div><button class="button secondary" data-refresh-menu type="button"><i data-lucide="refresh-cw"></i>Atualizar promoções</button></div><section class="promotion-admin-panel"><div class="promotion-admin-head"><div><span class="eyebrow">Destaques do cardápio</span><h2>Promoções</h2><p>Marque os produtos que entram em oferta e informe o desconto. Eles aparecem antes do cardápio do cliente.</p></div><div class="promotion-admin-actions"><span class="promotion-status" id="promotion-status">Carregando...</span><button class="button small" id="save-promotions" type="button"><i data-lucide="badge-percent"></i>Salvar promoções</button></div></div><div class="promotion-manager" id="promotion-manager"><div class="promotion-empty">Carregando produtos...</div></div></section></div></section>
-        <section class="view" id="view-drivers"><div class="page-head"><div><span class="eyebrow">Equipe de entrega</span><h1>Entregadores</h1><p>Cadastre e mantenha atualizados os entregadores disponíveis da loja.</p></div><div class="head-actions"><button class="button" data-add-driver type="button"><i data-lucide="user-plus"></i>Adicionar entregador</button><button class="button secondary" data-refresh-drivers type="button"><i data-lucide="refresh-cw"></i>Atualizar</button></div></div><div class="drivers-table" id="drivers-table"><div class="empty-column">Carregando entregadores...</div></div></section>
         <section class="view" id="view-history"><div class="page-head"><div><span class="eyebrow">Pedidos concluídos</span><h1>Histórico</h1><p>Consulte rapidamente o que já saiu da operação.</p></div><button class="button secondary" data-export-history><i data-lucide="download"></i>Exportar histórico</button></div><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:0 2px"><i data-lucide="search" style="width:18px;color:var(--muted)"></i><input id="history-search" type="search" autocomplete="off" placeholder="Pesquisar por nome, # do pedido ou código LV-..." aria-label="Pesquisar histórico" style="width:min(520px,100%);height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font:inherit"></div><div class="history-table" id="history-table"></div></section>
         <section class="view" id="view-finance"><div class="page-head"><div><span class="eyebrow">Dinheiro da loja</span><h1>Resultado do dia</h1><p>Veja rapidamente quanto entrou, quanto saiu e qual é o resultado estimado.</p></div></div><div class="finance-grid"><div class="finance-card"><span class="finance-label">Entrou em vendas</span><div class="finance-value" id="finance-sales">R$ 0</div><div class="finance-note">pagamentos confirmados</div></div><div class="finance-card"><span class="finance-label">Custo estimado da comida</span><div class="finance-value" id="finance-cost">R$ 0</div><div class="finance-note">Valor diário informado pela loja</div></div><div class="finance-card"><span class="finance-label">Outros gastos</span><div class="finance-value" id="finance-expenses">R$ 0</div><div class="finance-note">entregas, gás e materiais</div></div><div class="finance-card highlight"><span class="finance-label">Resultado estimado</span><div class="finance-value" id="finance-profit">R$ 0</div><div class="finance-note">vendas menos custos estimados e outros gastos</div></div></div><section class="finance-panel" style="margin-bottom:14px"><h2>Custo diário dos produtos</h2><p class="finance-footnote">Informe quanto a loja estima gastar por dia com ingredientes. O valor se repete diariamente até ser alterado. Não inclua os gastos cadastrados separadamente.</p><form class="expense-form" id="daily-cost-form"><label for="daily-cost-value" class="finance-label">Valor por dia (R$)</label><input id="daily-cost-value" type="number" min="0" max="99999999.99" step="0.01" required placeholder="0,00" style="height:42px"><button class="button small" type="submit" id="daily-cost-save" disabled>Salvar custo</button></form><p id="daily-cost-status" class="finance-footnote" role="status" aria-live="polite">Carregando custo diário...</p></section><div class="finance-layout"><section class="finance-panel"><h2>Como chegamos ao resultado estimado</h2><div class="finance-list"><div class="finance-line"><span>Pagamentos confirmados</span><strong id="finance-order-count">0</strong></div><div class="finance-line"><span>Total que entrou</span><strong id="finance-gross">R$ 0</strong></div><div class="finance-line"><span>Custo estimado da comida</span><strong id="finance-product-cost">R$ 0</strong></div><div class="finance-line"><span>Outros gastos</span><strong id="finance-operational-cost">R$ 0</strong></div><div class="finance-line total"><span>Resultado estimado</span><strong id="finance-total-profit">R$ 0</strong></div></div><p class="finance-footnote">Resultado = pagamentos confirmados − custo diário informado − outros gastos do dia. A alteração do custo vale a partir de hoje e preserva os dias anteriores. Este resultado é uma estimativa.</p></section><section class="finance-panel"><h2>Adicionar gasto</h2><form class="expense-form" id="expense-form"><input id="expense-name" placeholder="Ex.: motoboy" aria-label="Nome do gasto" required><input id="expense-value" type="number" min="0" step="0.01" placeholder="R$" aria-label="Valor do gasto" required><button class="button small" type="submit"><i data-lucide="plus"></i>Adicionar</button></form><div id="expense-list"></div></section></div></section>
       </main>
     </div>
     <div class="notification" id="notification"><div class="notification-icon"><i data-lucide="bell-ring"></i></div><div class="notification-copy"><strong>Novo pedido recebido</strong><span id="notification-text">Aguardando novos pedidos.</span></div><button class="notification-close" id="close-notice" aria-label="Fechar aviso"><i data-lucide="x"></i></button></div>
-    <div class="modal-layer" id="driver-modal"><div class="modal"><div class="modal-head"><h2 id="driver-modal-title">Entregador</h2><button class="close" data-close-driver-modal type="button" aria-label="Fechar"><i data-lucide="x"></i></button></div><div id="driver-modal-content"></div></div></div>
     <div class="modal-layer" id="product-edit-modal"><div class="modal product-manager-modal"><div class="modal-head"><h2 id="product-modal-title">Produto</h2><button class="close" data-close-product-editor type="button" aria-label="Fechar"><i data-lucide="x"></i></button></div><div id="product-edit-content"></div></div></div>
     <div class="modal-layer" id="detail-modal"><div class="modal"><div class="modal-head"><h2>Detalhes do pedido</h2><button class="close" data-close-modal aria-label="Fechar"><i data-lucide="x"></i></button></div><div id="modal-content"></div></div></div>
     <div class="modal-layer" id="account-modal">
@@ -494,8 +492,8 @@ window.LVAlerts=(()=>{
   const isToday=value=>{const date=new Date(value),today=new Date();return date.getFullYear()===today.getFullYear()&&date.getMonth()===today.getMonth()&&date.getDate()===today.getDate()};
   function normalizeOrderType(value){const type=String(value||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(type==='pickup'||type==='retirada'||type==='retirada no balcao')return'Retirada no balcão';if(type==='delivery'||type==='entrega')return'Entrega';if(type==='local'||type==='comer no local'||type==='comendo no local')return'Comer no local';return'Tipo não identificado'}
   function orderStatusMeta(order){if(order.status==='new'){return order.type==='Entrega'?{...statusMeta.new,next:'delivery',nextLabel:'Saiu para entrega'}:{...statusMeta.new,next:'ready',nextLabel:'Marcar como pronto'}}if(order.status==='ready'){if(order.type==='Retirada no balcão'||order.type==='Comer no local')return{...statusMeta.ready,next:null,nextLabel:'Confirmar pagamento'}}return statusMeta[order.status]}
-  function needsDeliveryConfirmation(order){return order.status==='delivery'&&order.type==='Entrega'&&order.deliveryCodeRequired&&!order.deliveryVerifiedAt}
-  function canConfirmPayment(order){return order.paymentStatus!=='paid'&&((order.status==='delivery'&&(!order.deliveryCodeRequired||!!order.deliveryVerifiedAt))||(order.status==='ready'&&(order.type==='Retirada no balcão'||order.type==='Comer no local')))}
+  function needsDeliveryConfirmation(){return false}
+  function canConfirmPayment(order){return order.paymentStatus!=='paid'&&(order.status==='delivery'||(order.status==='ready'&&(order.type==='Retirada no balcão'||order.type==='Comer no local')))}
   function normalizeStatus(status){const value=String(status||'').toLowerCase();if(['1','new','pending','novo','awaiting_confirmation','accepted','aceito','2','preparing','in_preparation','prep','em_preparo'].includes(value))return'new';if(['3','ready','pronto','out_for_delivery','delivering','delivered','delivery'].includes(value))return value==='ready'||value==='pronto'?'ready':'delivery';if(['4','completed','done','finalizado'].includes(value))return'done';if(['cancelled','canceled','rejected','recusado','cancelado'].includes(value))return'cancelled';return'new'}
   function normalizeOrder(row,items=[]){const type=normalizeOrderType(row.order_type),paymentStatus=String(row.payment_status||'pending').toLowerCase(),rawStatus=normalizeStatus(row.status);let status=rawStatus;if(rawStatus==='done'&&paymentStatus!=='paid')status=type==='Entrega'?'delivery':'ready';return{id:row.id,customer:row.customer_name||'Cliente não informado',phone:row.customer_phone||'',address:row.address||'',notes:row.notes||'',createdAt:row.created_at||Date.now(),minutes:Math.max(0,Math.floor((Date.now()-new Date(row.created_at||Date.now()).getTime())/60000)),status,rawStatus,time:new Date(row.created_at||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),type,payment:row.payment_method||'A confirmar',paymentStatus,paidAt:row.paid_at||null,orderCode:row.order_code||'',deliveryCodeRequired:Boolean(row.delivery_code_required),deliveryVerifiedAt:row.delivery_verified_at||null,total:Number(row.total||0),items}}
   async function loadRealOrders({notify=true}={}){const{data,error}=await db.from('orders').select('id,order_code,customer_name,customer_phone,address,notes,order_type,payment_method,payment_status,paid_at,status,total,delivery_code_required,delivery_verified_at,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});if(error){console.error('Erro ao carregar pedidos:',error);showToast('Erro ao carregar pedidos');return}const{data:itemRows,error:itemError}=await db.from('order_items').select('*');if(itemError){console.error('Erro ao carregar itens:',itemError);showToast('Erro ao carregar itens dos pedidos');return}const{data:products,error:productError}=await db.from('products').select('id,name,base_price');if(productError){console.error('Erro ao carregar produtos:',productError);showToast('Erro ao carregar produtos');return}const productMap=new Map((products||[]).map(product=>[product.id,product]));const nextOrders=(data||[]).map(row=>normalizeOrder(row,(itemRows||[]).filter(item=>item.order_id===row.id).map(item=>{const product=productMap.get(item.product_id)||{};return{qty:Number(item.quantity||item.qty||1),name:item.product_name||product.name||'Item',detail:(item.is_addition?'ADICIONADO DEPOIS · ':'')+(item.detail||[item.size,item.edge,item.note].filter(Boolean).join(' · ')),price:Number(item.unit_price||product.base_price||0),isAddition:Boolean(item.is_addition),addedAt:item.added_at||null}})));const nextIds=new Set(nextOrders.map(order=>String(order.id)));const fresh=notify?nextOrders.filter(order=>!knownOrderIds.has(String(order.id))&&order.status==='new'):[];orders=nextOrders;knownOrderIds=nextIds;render();renderFinance();if(fresh.length){const latest=fresh[0];document.querySelector('#notification-text').textContent=`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer} chegou agora.`;const notice=document.querySelector('#notification');notice.classList.remove('show');void notice.offsetWidth;notice.classList.add('show');window.LVAlerts?.start('admin-new-order','Novo pedido recebido',`Pedido #${latest.id} · ${latest.orderCode||'Sem código'} de ${latest.customer}`,{repeats:1200,interval:3000});}}
@@ -779,9 +777,71 @@ window.LVAlerts=(()=>{
   function renderStats(){const count=status=>orders.filter(o=>o.status===status).length;document.querySelector('#stat-new').textContent=count('new');document.querySelector('#stat-delivery').textContent=count('delivery');document.querySelector('#stat-ready').textContent=count('ready');document.querySelector('#new-count').textContent=count('new');const sales=orders.filter(o=>o.status==='done'&&o.paymentStatus==='paid'&&o.paidAt&&isToday(o.paidAt)).reduce((sum,o)=>sum+o.total,0);document.querySelector('#stat-sales').textContent=money(sales).replace(',00','')}
   function render(){renderBoard('orders-board');renderBoard('overview-orders',true);renderHistory();renderStats()}
   function customerWhatsAppNumber(phone){let digits=String(phone||'').replace(/\D/g,'');if(!digits)return'';if(digits.startsWith('55')&&digits.length>=12)return digits;if(digits.length===10||digits.length===11)return'55'+digits;if(digits.length===8||digits.length===9)return'5568'+digits;return digits}
-  function customerStatusWhatsApp(order,next){if(!order)return null;const shouldNotifyPickup=next==='ready'&&order.type==='Retirada no balcão';const shouldNotifyDelivery=next==='delivery'&&order.type==='Entrega';if(!shouldNotifyPickup&&!shouldNotifyDelivery)return null;const phone=customerWhatsAppNumber(order.phone);if(!phone)return null;const firstName=String(order.customer||'Cliente').trim().split(/\s+/)[0]||'Cliente';const code=order.orderCode?`#${order.orderCode}`:`#${order.id}`;const message=shouldNotifyPickup?`Olá, ${firstName}! Seu pedido ${code} da Delivery LV está pronto para retirada. Pode vir buscar!`:`Olá, ${firstName}! Seu pedido ${code} da Delivery LV saiu para entrega e já está a caminho!`;return`https://wa.me/${phone}?text=${encodeURIComponent(message)}`}
-  function openCustomerStatusWhatsApp(order,next){const url=customerStatusWhatsApp(order,next);if(!url)return false;const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)window.location.href=url;return true}
-  async function updateStatus(id,next){const order=orders.find(item=>String(item.id)===String(id));const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'out_for_delivery',cancelled:'cancelled'}[next];if(!status)return;const{error}=await db.from('orders').update({status}).eq('id',id);if(error){console.error('Erro ao atualizar pedido:',error);showToast(`Erro ao atualizar pedido: ${error.message||'verifique as permissões'}`);return}await loadRealOrders({notify:false});const whatsappOpened=openCustomerStatusWhatsApp(order,next);showToast(next==='cancelled'?'Pedido recusado':whatsappOpened?'Pedido atualizado · WhatsApp aberto':'Pedido atualizado')}
+  function customerStatusWhatsApp(order,next){if(!order||next!=='ready'||order.type!=='Retirada no balcão')return null;const phone=customerWhatsAppNumber(order.phone);if(!phone)return null;const firstName=String(order.customer||'Cliente').trim().split(/\s+/)[0]||'Cliente';const code=order.orderCode?`#${order.orderCode}`:`#${order.id}`;const message=`Olá, ${firstName}! Seu pedido ${code} da Delivery LV está pronto para retirada. Pode vir buscar!`;return`https://wa.me/${phone}?text=${encodeURIComponent(message)}`}
+  function openCustomerStatusWhatsApp(order,next){const url=customerStatusWhatsApp(order,next);if(!url)return false;window.location.href=url;return true}
+  async function getActiveDeliveryDriver(){
+    const{data,error}=await db.from('delivery_drivers').select('id,name,phone').eq('active',true).not('phone','is',null).order('id',{ascending:true}).limit(1);
+    if(error)throw error;
+    const driver=data?.[0]||null;
+    if(!driver||!customerWhatsAppNumber(driver.phone))throw new Error('Nenhum entregador ativo com WhatsApp cadastrado');
+    return driver;
+  }
+  function driverDeliveryWhatsApp(order,driver){
+    const phone=customerWhatsAppNumber(driver.phone);
+    if(!phone)return null;
+    const items=(order.items||[]).map(item=>`• ${item.qty}x ${item.name}${item.detail?` — ${item.detail}`:''} — ${money(Number(item.price||0)*Number(item.qty||1))}`).join('\n');
+    const notes=String(order.notes||'').trim();
+    const changeMatch=notes.match(/Troco para\s+(?:R\$\s*)?([0-9.,]+)/i);
+    const changeLine=changeMatch?`Troco para: R$ ${changeMatch[1]}`:'';
+    const mapLink=order.address?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`:'';
+    const message=[
+      '*ENTREGA - DELIVERY LV*',
+      `Pedido #${order.id}${order.orderCode?` · ${order.orderCode}`:''}`,
+      '',
+      `Cliente: ${order.customer||'Cliente'}`,
+      `Telefone: ${order.phone||'Não informado'}`,
+      `Endereço: ${order.address||'Não informado'}`,
+      mapLink?`Mapa: ${mapLink}`:'',
+      '',
+      `Pagamento: ${order.payment||'A confirmar'}`,
+      changeLine,
+      '',
+      '*Itens:*',
+      items||'Itens não informados',
+      '',
+      `*Total: ${money(Number(order.total||0))}*`,
+      notes&&!changeLine?`Observações: ${notes}`:''
+    ].filter(Boolean).join('\n');
+    return`https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  }
+  async function updateStatus(id,next){
+    const order=orders.find(item=>String(item.id)===String(id));
+    const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'out_for_delivery',cancelled:'cancelled'}[next];
+    if(!order||!status)return;
+    try{
+      let driver=null;
+      const payload={status};
+      if(next==='delivery'&&order.type==='Entrega'){
+        driver=await getActiveDeliveryDriver();
+        payload.driver_id=driver.id;
+        payload.driver_assigned_at=new Date().toISOString();
+      }
+      const{error}=await db.from('orders').update(payload).eq('id',id);
+      if(error)throw error;
+      await loadRealOrders({notify:false});
+      if(next==='delivery'&&driver){
+        const url=driverDeliveryWhatsApp(order,driver);
+        showToast('Pedido saiu para entrega · abrindo WhatsApp do entregador');
+        if(url)window.location.href=url;
+        return;
+      }
+      const whatsappOpened=openCustomerStatusWhatsApp(order,next);
+      showToast(next==='cancelled'?'Pedido recusado':whatsappOpened?'Pedido atualizado · WhatsApp aberto':'Pedido atualizado');
+    }catch(error){
+      console.error('Erro ao atualizar pedido:',error);
+      showToast(error?.message||'Não foi possível atualizar o pedido');
+    }
+  }
   async function validateDeliveryCode(id){
     const order=orders.find(item=>item.id===id);if(!order||!needsDeliveryConfirmation(order))return;
     const raw=window.prompt(`Pedido #${id}\nDigite o código de entrega de 4 dígitos informado pelo cliente:`);
@@ -809,7 +869,7 @@ window.LVAlerts=(()=>{
     document.querySelectorAll('[data-menu-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.menuPanel===target));
     if(target==='promotions')loadRealMenu();
   }
-  function switchView(view){document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`view-${view}`));if(view==='orders')renderBoard('orders-board');if(view==='menu'){switchMenuSubview('products');loadRealMenu()}if(view==='drivers')loadDrivers();window.scrollTo({top:0,behavior:'smooth'})}
+  function switchView(view){document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`view-${view}`));if(view==='orders')renderBoard('orders-board');if(view==='menu'){switchMenuSubview('products');loadRealMenu()}window.scrollTo({top:0,behavior:'smooth'})}
   document.addEventListener('click',event=>{const menuSubtab=event.target.closest('[data-menu-subview]');if(menuSubtab){switchMenuSubview(menuSubtab.dataset.menuSubview);return}const nav=event.target.closest('[data-view]');if(nav)switchView(nav.dataset.view);const jump=event.target.closest('[data-view-jump]');if(jump)switchView(jump.dataset.viewJump);const refresh=event.target.closest('[data-refresh-orders]');if(refresh)loadRealOrders();const action=event.target.closest('[data-action]');if(action){const id=Number(action.dataset.id);if(action.dataset.action==='accept'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta?.next)updateStatus(id,meta.next)};if(action.dataset.action==='advance'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta&&meta.next)updateStatus(id,meta.next)}if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='validate-delivery-code')validateDeliveryCode(id);if(action.dataset.action==='confirm-payment')confirmPayment(id);if(action.dataset.action==='details')openDetails(id);if(action.dataset.action==='print-order')window.LVPrinting?.printPreferred(id);if(action.dataset.action==='system-print-order')window.LVPrinting?.printNormal(id)}if(event.target.closest('[data-close-modal]')||event.target.id==='detail-modal')document.querySelector('#detail-modal').classList.remove('show');});
   document.addEventListener('click',event=>{
     const addProduct=event.target.closest('[data-add-product]');if(addProduct){openProductCreator();return}
@@ -1550,193 +1610,7 @@ window.LVAlerts=(()=>{
 </script>
 
 
-<style id="driver-login-styles">
-  .driver-app{display:none;min-height:100vh;background:var(--bg);color:var(--text)}.driver-app.authenticated{display:block}
-  .driver-topbar{position:sticky;top:0;z-index:25;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;background:#11100ff2;border-bottom:1px solid #ffffff12;backdrop-filter:blur(18px)}
-  .driver-topbar-copy strong{display:block;font:800 22px/1 "Barlow Condensed";text-transform:uppercase}.driver-topbar-copy span{display:block;margin-top:4px;color:var(--muted);font-size:10px}
-  .driver-main{width:min(920px,100%);margin:auto;padding:24px 16px 80px}.driver-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:22px}.driver-hero h1{margin:6px 0 5px;font:800 42px/.92 "Barlow Condensed";text-transform:uppercase}.driver-hero p{margin:0;color:var(--muted);font-size:11px}
-  .driver-section{margin-top:22px}.driver-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.driver-section-head h2{margin:0;font:800 25px/1 "Barlow Condensed";text-transform:uppercase}.driver-count{min-width:24px;height:24px;display:grid;place-items:center;border-radius:7px;background:var(--panel-3);color:var(--orange-soft);font-size:10px;font-weight:900}
-  .driver-order-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.driver-delivery-card{padding:15px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.driver-delivery-card.mine{border-color:#d9f15c50;box-shadow:inset 3px 0 var(--lime)}
-  .driver-delivery-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.driver-delivery-top strong{color:var(--orange-soft);font-size:12px}.driver-delivery-top span{color:var(--muted);font-size:9px}.driver-customer{margin-top:10px;font-size:15px;font-weight:900}.driver-address{margin-top:5px;color:#d2c7bd;font-size:11px;line-height:1.45}.driver-order-code{margin-top:5px;color:var(--muted);font-size:10px}.driver-delivery-info{display:grid;gap:7px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line);font-size:10px}.driver-delivery-info div{display:flex;justify-content:space-between;gap:10px}.driver-delivery-info span{color:var(--muted)}.driver-delivery-info strong{text-align:right}.driver-delivery-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}.driver-delivery-actions .button{min-width:0;padding:0 9px}.driver-call{display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;border:1px solid var(--line);border-radius:9px;background:var(--panel-3);font-size:11px;font-weight:900}.driver-call svg{width:14px}.driver-empty{padding:26px 12px;border:1px dashed var(--line);border-radius:11px;color:var(--muted);text-align:center;font-size:11px}
-  .driver-pin-help{display:block;margin-top:5px;color:var(--muted);font-size:9px;line-height:1.4}
-  @media(max-width:700px){.driver-main{padding:18px 12px 70px}.driver-hero{align-items:flex-start;flex-direction:column}.driver-hero h1{font-size:37px}.driver-hero .button{width:100%}.driver-order-list{grid-template-columns:1fr}.driver-delivery-actions{grid-template-columns:1fr}.driver-topbar{padding:11px 12px}.driver-topbar .button{min-height:38px;padding:0 11px;font-size:10px}}
-</style>
 
-<section class="driver-app" id="driver-app">
-  <header class="driver-topbar">
-    <div class="driver-topbar-copy"><strong>Delivery LV</strong><span id="driver-profile-label">Área do entregador</span></div>
-    <div class="driver-topbar-actions"><button class="button secondary small lv-alert-toggle" data-enable-alerts type="button"><i data-lucide="bell-ring"></i><span>Ativar alertas</span></button><button class="button secondary small" id="driver-logout" type="button"><i data-lucide="arrow-left-right"></i>Trocar acesso</button></div>
-  </header>
-  <main class="driver-main">
-    <div class="driver-hero"><div><span class="eyebrow">Central de entregas</span><h1>Minhas entregas</h1><p>Veja pedidos disponíveis e acompanhe as entregas que você pegou.</p></div><button class="button secondary" id="driver-refresh" type="button"><i data-lucide="refresh-cw"></i>Atualizar</button></div>
-    <section class="driver-section"><div class="driver-section-head"><h2>Disponíveis</h2><span class="driver-count" id="driver-available-count">0</span></div><div class="driver-order-list" id="driver-available-orders"></div></section>
-    <section class="driver-section"><div class="driver-section-head"><h2>Comigo agora</h2><span class="driver-count" id="driver-mine-count">0</span></div><div class="driver-order-list" id="driver-my-orders"></div></section>
-    <section class="driver-section driver-history-section"><div class="driver-section-head"><div><span class="eyebrow">Entregas concluídas</span><h2>Histórico</h2></div><span class="driver-count" id="driver-history-count">0</span></div><div class="driver-order-list" id="driver-history-orders"></div></section>
-  </main>
-</section>
-
-<script id="driver-login-module">
-(()=>{
-  const DRIVER_SESSION_KEY='deliverylv_driver_session';
-  let loginMode='admin';
-  let driverToken=localStorage.getItem(DRIVER_SESSION_KEY)||'';
-  let driverProfile=null;
-  let driverOrders=[];
-  let driverRefreshTimer=null;
-  let driverKnownAvailableIds=new Set();
-  let driverAlertsReady=false;
-  const createDriverClient=token=>window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,token?{global:{headers:{'x-driver-session':token}}}:{});
-  let driverDb=createDriverClient(driverToken);
-  const publicDriverDb=createDriverClient('');
-  async function driverAuth(action,{login=null,pin=null}={}){
-    const client=action==='login'?publicDriverDb:driverDb;
-    const{data,error}=await client.rpc('lv_driver_auth',{p_action:action,p_login:login,p_pin:pin});
-    if(error)throw error;return data;
-  }
-
-  const loginForm=document.querySelector('#login-form');
-  const loginCard=document.querySelector('.login-card');
-  const modeBar=document.createElement('div');
-  modeBar.className='login-mode';
-  modeBar.innerHTML='<button class="login-mode-button active" type="button" data-login-mode="admin">Admin</button><button class="login-mode-button" type="button" data-login-mode="driver">Entregador</button>';
-  loginForm.insertAdjacentElement('beforebegin',modeBar);
-  const loginTitle=loginCard.querySelector('h1'),loginIntro=loginCard.querySelector('p'),userLabel=document.querySelector('#login-user-field label'),userInput=document.querySelector('#login-user'),passwordLabel=document.querySelector('#login-password-label'),passwordInput=document.querySelector('#login-password'),help=loginCard.querySelector('.login-help');
-  loginCard.querySelector('.login-brand small').textContent='CENTRAL DE ACESSO';
-
-  function setLoginMode(mode){
-    loginMode=mode;
-    modeBar.querySelectorAll('[data-login-mode]').forEach(button=>button.classList.toggle('active',button.dataset.loginMode===mode));
-    const driver=mode==='driver';
-    loginTitle.textContent=driver?'Entrar como entregador':'Entrar no painel';
-    loginIntro.textContent=driver?'Use seu telefone cadastrado e o PIN fornecido pela loja.':'Entre com o e-mail e a senha cadastrados.';
-    userLabel.textContent=driver?'Telefone':'E-mail';
-    userInput.type=driver?'tel':'email';userInput.inputMode=driver?'tel':'email';userInput.placeholder=driver?'(68) 99999-9999':'Digite o e-mail cadastrado';
-    passwordLabel.textContent=driver?'PIN de acesso':'Senha';
-    passwordInput.inputMode=driver?'numeric':'';passwordInput.placeholder=driver?'Digite seu PIN':'Digite sua senha';
-    help.textContent=driver?'Seu acesso mostra somente as entregas. O PIN é cadastrado pela administração da loja.':'Por segurança, a senha não fica gravada no código do site. Após tentativas incorretas repetidas, o acesso é temporariamente bloqueado.';
-    userInput.value='';passwordInput.value='';document.querySelector('#login-message').textContent='';
-  }
-  modeBar.addEventListener('click',event=>{const button=event.target.closest('[data-login-mode]');if(button)setLoginMode(button.dataset.loginMode)});
-  const switchLoginButton=document.querySelector('#switch-login-button');
-  if(switchLoginButton){
-    switchLoginButton.onclick=async()=>{
-      await clearPanelSession({serverLogout:true,message:'Escolha como deseja entrar.'});
-      setLoginMode('admin');
-    };
-  }
-
-  const originalOpenDriverEditor=openDriverEditor;
-  openDriverEditor=function(id=null){
-    originalOpenDriverEditor(id);
-    const form=document.querySelector('#driver-form');if(!form)return;
-    const phone=document.querySelector('#driver-phone');phone.required=true;
-    const anchor=document.querySelector('.driver-active-row');
-    const field=document.createElement('div');field.className='driver-field full';
-    field.innerHTML=`<label for="driver-pin">PIN de acesso ${id?'(opcional para trocar)':''}</label><input id="driver-pin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" ${id?'':'required'} placeholder="${id?'Deixe vazio para manter o PIN':'4 a 8 números'}"><small class="driver-pin-help">O entregador entra usando o telefone cadastrado + este PIN. Para trocar o PIN depois, preencha um novo.</small>`;
-    anchor.insertAdjacentElement('beforebegin',field);
-  };
-
-  saveDriver=async function(event,id=null){
-    event.preventDefault();
-    const name=document.querySelector('#driver-name').value.trim(),phone=document.querySelector('#driver-phone').value.trim(),pin=document.querySelector('#driver-pin')?.value.trim()||'';
-    const digits=phone.replace(/\D/g,'');
-    if(name.length<2){showToast('Informe o nome do entregador');return}
-    if(digits.length<8||digits.length>15){showToast('Informe um telefone válido');return}
-    if(!id&&!/^\d{4,8}$/.test(pin)){showToast('Crie um PIN de 4 a 8 números');return}
-    if(pin&&!/^\d{4,8}$/.test(pin)){showToast('O PIN deve ter de 4 a 8 números');return}
-    const payload={name,phone,vehicle_type:document.querySelector('#driver-vehicle').value,vehicle_identification:document.querySelector('#driver-identification').value.trim()||null,notes:document.querySelector('#driver-notes').value.trim()||null,active:document.querySelector('#driver-active').checked,updated_at:new Date().toISOString()};
-    const button=event.submitter;button.disabled=true;button.textContent='Salvando...';
-    try{
-      let savedId=id;
-      if(id){const{data,error}=await db.from('delivery_drivers').update(payload).eq('id',id).select('id').single();if(error)throw error;savedId=data.id}
-      else{const{data,error}=await db.from('delivery_drivers').insert(payload).select('id').single();if(error)throw error;savedId=data.id}
-      const{data:access,error:accessError}=await db.rpc('lv_driver_access',{p_driver_id:savedId,p_pin:pin||null});
-      if(accessError)throw accessError;if(!access?.ok)throw new Error(access?.message||'Não foi possível configurar o acesso do entregador');
-      document.querySelector('#driver-modal').classList.remove('show');await loadDrivers();showToast(id?'Entregador atualizado':'Entregador cadastrado e acesso liberado');
-    }catch(error){console.error('Erro ao salvar entregador:',error);showToast(error?.message||'Não foi possível salvar o entregador')}
-    finally{button.disabled=false;button.innerHTML=id?'<i data-lucide="save"></i>Salvar alterações':'<i data-lucide="save"></i>Cadastrar entregador';lucide.createIcons()}
-  };
-
-  const escapeDriver=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const driverStatusLabel=status=>['delivered','out_for_delivery','delivery'].includes(String(status))?'Saiu para entrega':status==='ready'?'Pronto para sair':status==='completed'?'Finalizado':'Em andamento';
-  function driverCard(order,mine=false){
-    const phoneDigits=String(order.customer_phone||'').replace(/\D/g,'');
-    const needsCode=Boolean(order.delivery_code_required)&&!order.delivery_verified_at;
-    const canFinish=mine&&(!order.delivery_code_required||order.delivery_verified_at)&&order.payment_status!=='paid';
-    return `<article class="driver-delivery-card ${mine?'mine':''}"><div class="driver-delivery-top"><strong>#${order.id} · ${escapeDriver(order.order_code||'')}</strong><span>${new Date(order.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span></div><div class="driver-customer">${escapeDriver(order.customer_name||'Cliente')}</div><div class="driver-address">${escapeDriver(order.address||'Endereço não informado')}</div><div class="driver-order-code">${driverStatusLabel(order.status)}</div><div class="driver-delivery-info"><div><span>Pagamento</span><strong>${escapeDriver(order.payment_method||'A confirmar')}</strong></div><div><span>Total</span><strong>${money(Number(order.total||0))}</strong></div>${mine?`<div><span>Código</span><strong>${needsCode?'Aguardando cliente':order.delivery_code_required?'Validado':'Não exigido'}</strong></div>`:''}</div><div class="driver-delivery-actions">${mine?(needsCode?`<button class="button" data-driver-action="validate" data-order-id="${order.id}"><i data-lucide="key-round"></i>Validar código</button>`:canFinish?`<button class="button" data-driver-action="finish" data-order-id="${order.id}"><i data-lucide="badge-check"></i>Confirmar pagamento</button>`:''):`<button class="button" data-driver-action="claim" data-order-id="${order.id}"><i data-lucide="bike"></i>Pegar entrega</button>`}${phoneDigits?`<a class="driver-call" href="tel:${phoneDigits}"><i data-lucide="phone"></i>Ligar para cliente</a>`:''}</div></article>`;
-  }
-  function driverHistoryCard(order){
-    const when=order.finished_at||order.paid_at||order.created_at;
-    const date=when?new Date(when).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'Data não informada';
-    return `<article class="driver-delivery-card history"><div class="driver-delivery-top"><strong>#${order.id} · ${escapeDriver(order.order_code||'')}</strong><span>Finalizada</span></div><div class="driver-customer">${escapeDriver(order.customer_name||'Cliente')}</div><div class="driver-history-date">${date}</div><div class="driver-delivery-info"><div><span>Pagamento</span><strong>${escapeDriver(order.payment_method||'')}</strong></div><div><span>Total</span><strong>${money(Number(order.total||0))}</strong></div></div></article>`;
-  }
-  function renderDriverOrders(){
-    const mine=driverOrders.filter(order=>String(order.driver_id)===String(driverProfile?.driver_id)&&order.payment_status!=='paid'&&order.status!=='completed');
-    const available=driverOrders.filter(order=>!order.driver_id&&['ready','delivered','out_for_delivery','delivery'].includes(String(order.status)));
-    const history=driverOrders.filter(order=>String(order.driver_id)===String(driverProfile?.driver_id)&&(order.payment_status==='paid'||order.status==='completed')).sort((a,b)=>new Date(b.finished_at||b.paid_at||b.created_at)-new Date(a.finished_at||a.paid_at||a.created_at));
-    document.querySelector('#driver-available-count').textContent=available.length;document.querySelector('#driver-mine-count').textContent=mine.length;document.querySelector('#driver-history-count').textContent=history.length;
-    document.querySelector('#driver-available-orders').innerHTML=available.length?available.map(order=>driverCard(order,false)).join(''):'<div class="driver-empty">Nenhuma entrega disponível agora.</div>';
-    document.querySelector('#driver-my-orders').innerHTML=mine.length?mine.map(order=>driverCard(order,true)).join(''):'<div class="driver-empty">Você não está com nenhuma entrega no momento.</div>';
-    document.querySelector('#driver-history-orders').innerHTML=history.length?history.map(driverHistoryCard).join(''):'<div class="driver-empty">Nenhuma entrega concluída por você ainda.</div>';
-    lucide.createIcons();
-  }
-  async function loadDriverOrders(){
-    const{data,error}=await driverDb.from('orders').select('id,order_code,customer_name,customer_phone,address,payment_method,payment_status,paid_at,status,total,delivery_code_required,delivery_verified_at,driver_id,driver_assigned_at,finished_at,created_at').order('created_at',{ascending:false}).order('id',{ascending:false});
-    if(error){console.error('Erro ao carregar entregas:',error);if(error.code==='PGRST301')clearDriverSession('Sua sessão terminou.');return}
-    const rows=data||[];
-    const availableRows=rows.filter(order=>!order.driver_id&&['ready','delivered','out_for_delivery','delivery'].includes(String(order.status)));
-    const freshAvailable=availableRows.filter(order=>!driverKnownAvailableIds.has(String(order.id)));
-    driverOrders=rows;renderDriverOrders();driverKnownAvailableIds=new Set(availableRows.map(order=>String(order.id)));
-    if((driverAlertsReady||freshAvailable.length)&&freshAvailable.length){const latest=freshAvailable[0];window.LVAlerts?.start('driver-new-delivery','Nova entrega disponível',`Pedido #${latest.id} · ${latest.order_code||''} · ${latest.customer_name||'Cliente'}`,{repeats:1200,interval:3000})}
-    driverAlertsReady=true;
-  }
-  async function enterDriver(profile){
-    driverProfile=profile;driverKnownAvailableIds=new Set();driverAlertsReady=false;window.LVAlerts?.stop('driver-new-delivery');document.querySelector('#panel-app').classList.remove('authenticated');document.querySelector('#login-screen').style.display='none';document.querySelector('#driver-app').classList.add('authenticated');document.querySelector('#driver-profile-label').textContent=`${profile.name} · ${profile.vehicle_type||'Entregador'}`;
-    await loadDriverOrders();if(driverRefreshTimer)clearInterval(driverRefreshTimer);driverRefreshTimer=setInterval(loadDriverOrders,5000);lucide.createIcons();setTimeout(()=>window.LVBackgroundPush?.onboard?.('driver'),350);
-  }
-  async function clearDriverSession(message=''){
-    if(driverToken){try{await driverAuth('logout')}catch(error){}}
-    if(driverRefreshTimer){clearInterval(driverRefreshTimer);driverRefreshTimer=null}window.LVAlerts?.stop('driver-new-delivery');driverKnownAvailableIds=new Set();driverAlertsReady=false;driverToken='';driverProfile=null;driverOrders=[];localStorage.removeItem(DRIVER_SESSION_KEY);driverDb=createDriverClient('');document.querySelector('#driver-app').classList.remove('authenticated');showLogin(message);setLoginMode('driver');
-  }
-  document.querySelector('#driver-logout').onclick=async()=>{await clearDriverSession('Escolha como deseja entrar.');document.querySelector('[data-login-mode="admin"]')?.click();};document.querySelector('#driver-refresh').onclick=()=>loadDriverOrders();
-  document.querySelector('#driver-app').addEventListener('click',async event=>{
-    const button=event.target.closest('[data-driver-action]');if(!button)return;const orderId=Number(button.dataset.orderId);button.disabled=true;
-    try{
-      if(button.dataset.driverAction==='claim'){
-        const{data,error}=await driverDb.rpc('lv_driver_claim_order',{p_order_id:orderId});if(error)throw error;if(!data?.ok)throw new Error(data?.message||'Não foi possível pegar esta entrega');window.LVAlerts?.stop('driver-new-delivery');showToast('Entrega adicionada à sua rota');
-      }else if(button.dataset.driverAction==='validate'){
-        const raw=prompt(`Pedido #${orderId}\nDigite o código de 4 dígitos informado pelo cliente:`);if(raw===null)return;const code=String(raw).trim();if(!/^\d{4}$/.test(code))throw new Error('O código deve ter exatamente 4 dígitos');
-        const{data,error}=await driverDb.rpc('lv_driver_confirm_delivery_code',{p_order_id:orderId,p_code:code});if(error)throw error;if(!data?.ok)throw new Error(data?.message||'Código incorreto');showToast('Código de entrega validado');
-      }else if(button.dataset.driverAction==='finish'){
-        if(!confirm('Confirmar que o pagamento foi recebido e finalizar esta entrega?'))return;
-        const{data,error}=await driverDb.rpc('lv_driver_confirm_payment',{p_order_id:orderId});if(error)throw error;if(!data?.ok)throw new Error(data?.message||'Não foi possível finalizar');showToast('Entrega finalizada');
-      }
-      await loadDriverOrders();
-    }catch(error){console.error(error);showToast(error?.message||'Não foi possível concluir a ação')}
-    finally{button.disabled=false}
-  });
-
-  loginForm.onsubmit=async event=>{
-    event.preventDefault();const typedLogin=userInput.value.trim(),secret=passwordInput.value,button=document.querySelector('#login-submit'),status=document.querySelector('#login-message');if(!secret)return;button.disabled=true;status.textContent='Verificando acesso...';status.className='auth-message';
-    try{
-      if(loginMode==='driver'){
-        const result=await driverAuth('login',{login:typedLogin,pin:secret});if(!result?.ok){status.textContent=result?.message||'Telefone ou PIN inválidos.';return}
-        driverToken=result.token;localStorage.setItem(DRIVER_SESSION_KEY,driverToken);driverDb=createDriverClient(driverToken);const me=await driverAuth('me');if(!me?.ok)throw new Error(me?.message||'Não foi possível validar a sessão.');status.textContent='';await enterDriver(me);
-      }else{
-        const login=typedLogin||'jhonata';const result=await panelAuth('login',{login,password:secret});if(!result?.ok){status.textContent=result?.message||'Usuário ou senha inválidos.';return}
-        panelToken=result.token;localStorage.setItem(PANEL_SESSION_KEY,panelToken);db=createPanelClient(panelToken);const me=await panelAuth('me');if(!me?.ok)throw new Error(me?.message||'Não foi possível validar a sessão.');status.textContent='';await enterPanel(me);
-      }
-    }catch(error){console.error('Erro no login:',error);status.textContent='Não foi possível entrar agora. Verifique sua conexão e tente novamente.'}
-    finally{button.disabled=false}
-  };
-
-  async function restoreDriver(){
-    if(panelToken||!driverToken)return;
-    try{driverDb=createDriverClient(driverToken);const me=await driverAuth('me');if(!me?.ok){await clearDriverSession('Entre novamente para acessar suas entregas.');return}await enterDriver(me)}catch(error){console.error('Erro ao restaurar entregador:',error);await clearDriverSession('Entre novamente para acessar suas entregas.')}
-  }
-  restoreDriver();
-})();
-</script>
 
 <button class="pwa-install-button" id="pwa-install-button" type="button" aria-label="Instalar aplicativo"><i data-lucide="download"></i><span>Instalar aplicativo</span></button>
 <script id="panel-pwa-module">
