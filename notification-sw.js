@@ -1,5 +1,5 @@
-const CACHE_NAME='deliverylv-panel-v4-audible-push';
-const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260918-ios-push-install-1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
+const CACHE_NAME='deliverylv-panel-v5-driver-whatsapp';
+const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260923-driver-whatsapp-today-orders-v1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
 const PUSH_ACK_URL='https://nhvarlrbqbryrurpdwvp.supabase.co/functions/v1/lv-web-push';
 
 self.addEventListener('install',event=>{
