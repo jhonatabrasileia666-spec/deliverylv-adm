@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260923-pizza-sizes-whatsapp-v2">
-  <script src="./lv-updates.js?v=20260923-pizza-sizes-whatsapp-v2"></script>
+  <meta name="lv-updates-build" content="20260925-delivery-status-whatsapp-v3">
+  <script src="./lv-updates.js?v=20260925-delivery-status-whatsapp-v3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -935,7 +935,7 @@ window.LVAlerts=(()=>{
   }
   async function updateStatus(id,next){
     const order=orders.find(item=>String(item.id)===String(id));
-    const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'out_for_delivery',cancelled:'cancelled'}[next];
+    const status={accepted:'accepted',prep:'prep',ready:'ready',delivery:'delivered',cancelled:'cancelled'}[next];
     if(!order||!status)return;
     let whatsappTab=null;
     if(next==='delivery'&&order.type==='Entrega'){
