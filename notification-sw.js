@@ -1,5 +1,5 @@
-const CACHE_NAME='deliverylv-panel-v9-esfiha-combo-toggle';
-const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260926-esfiha-combo-toggle-v1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
+const CACHE_NAME='deliverylv-panel-v10-esfirras-global-toggle';
+const APP_SHELL=['./','./index.html','./lv-updates.js?v=20260926-esfirras-global-toggle-v1','./manifest.webmanifest','./pwa-icon-192.svg','./pwa-icon-512.svg'];
 const PUSH_ACK_URL='https://nhvarlrbqbryrurpdwvp.supabase.co/functions/v1/lv-web-push';
 
 self.addEventListener('install',event=>{
