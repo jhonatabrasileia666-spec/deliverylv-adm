@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="lv-updates-build" content="20260926-esfirras-global-toggle-v1">
-  <script src="./lv-updates.js?v=20260926-esfirras-global-toggle-v1"></script>
+  <meta name="lv-updates-build" content="20261016-atualizacao-por-evento-v1">
+  <script src="./lv-updates.js?v=20261016-atualizacao-por-evento-v1"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <meta name="theme-color" content="#11100f">
@@ -350,7 +350,7 @@
             <button class="button secondary small" type="button" data-force-update="menu">Somente cardápio</button>
             <button class="button secondary small" type="button" data-force-update="admin">Somente painel</button>
           </div>
-          <p id="remote-update-last">Consultando última atualização...</p>
+          <p id="remote-update-last">Conectando aos avisos de atualização...</p>
           <div class="account-status" id="remote-update-status" role="status" aria-live="polite"></div>
         </div>
         <div class="account-section" id="ai-providers-section" style="display:none">
@@ -2445,6 +2445,7 @@ window.LVAlerts=(()=>{
   };
   LVUpdates.init({
     app:'admin', url:SUPABASE_URL, apiKey:SUPABASE_PUBLISHABLE_KEY,
+    realtimeClient:publicDb,
     onStatus:describe,
     onError:() => { last.textContent = 'Não foi possível consultar as atualizações. Verifique a conexão.'; },
     isBusy:() => sending || document.body.classList.contains('lv-printing') ||
@@ -2472,9 +2473,10 @@ window.LVAlerts=(()=>{
       const {data,error} = await db.rpc('lv_force_app_update', {p_target:button.dataset.forceUpdate});
       if (error) throw error;
       if (!data?.ok) throw new Error('O comando não foi confirmado pelo servidor.');
-      status.textContent = 'Comando enviado. As telas conectadas receberão a atualização na próxima verificação.';
+      // A RPC já devolve as revisões publicadas; não precisamos de outra consulta.
+      LVUpdates.accept(data.releases || []);
+      status.textContent = 'Comando enviado. As telas conectadas receberão o aviso em tempo real.';
       status.className = 'account-status ok';
-      await LVUpdates.check();
     } catch (error) {
       status.textContent = error.message || 'Não foi possível solicitar a atualização. Tente novamente.';
       status.className = 'account-status error';
