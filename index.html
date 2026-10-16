@@ -571,7 +571,7 @@ window.LVAlerts=(()=>{
       const nextOrders=data.map(row=>normalizeOrder(row,itemsByOrder.get(String(row.id))||[]));
       const nextIds=new Set(nextOrders.map(order=>String(order.id)));
       const fresh=notify?nextOrders.filter(order=>!knownOrderIds.has(String(order.id))&&order.status==='new'):[];
-      orders=nextOrders;knownOrderIds=nextIds;ordersLastSnapshot=snapshot;
+      orders=nextOrders;knownOrderIds=nextIds;ordersLastSnapshot=snapshot;rebuildOrderIndexes();
       render();renderFinance();
       if(fresh.length){
         const latest=fresh[0];
@@ -646,6 +646,7 @@ window.LVAlerts=(()=>{
       const priceText=item.pricing_mode==='sizes'?'A partir de '+money(base):money(base);
       return `<div class="table-row" data-product-row="${item.id}"><div class="menu-product">${thumb}<div class="menu-product-copy"><strong>${escapeMenuText(item.name||'')}</strong><small>${escapeMenuText(item.description||'Sem descrição')}</small></div></div><span>${escapeMenuText(categoryMap.get(item.category_id)||'-')}</span><span class="table-total">${priceText}</span><span class="addition-value ${addition>0?'':'none'}">${addition>0?'+ '+money(addition):'Sem acréscimo'}</span><span class="availability ${item.active===false?'off':''}">${item.active===false?'Indisponível':'Disponível'}</span><button class="menu-edit" data-edit-product="${item.id}" type="button" aria-label="Editar ${escapeMenuText(item.name||'produto')}"><i data-lucide="pencil"></i></button></div>`
     }).join('');
+    menuLastLoadedAt=Date.now();
     lucide.createIcons();
   }
   function activePizzaSizeRows(){return menuPizzaSizes.filter(size=>size.active!==false).sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0))}
@@ -980,20 +981,34 @@ window.LVAlerts=(()=>{
   }
   function boardColumn(status,title,ordersToShow){return `<section class="order-column column-${status==='new'?'new':status==='accepted'?'accepted':status==='prep'?'prep':status==='ready'?'ready':'other'}"><div class="column-head"><div class="column-title">${title}</div><span class="column-count">${ordersToShow.length}</span></div><div class="column-list">${ordersToShow.length?ordersToShow.map(orderCard).join(''):'<div class="empty-column">Nenhum pedido aqui</div>'}</div></section>`}
   function renderBoard(targetId,overview=false){const target=document.querySelector('#'+targetId);const active=orders.filter(order=>isToday(order.createdAt));const columns=[['new','Novos',active.filter(o=>o.status==='new')],['ready','Prontos',active.filter(o=>o.status==='ready')],['delivery','Saiu para entrega',active.filter(o=>o.status==='delivery')],['done','Finalizados',active.filter(o=>o.status==='done'&&o.paymentStatus==='paid')]];if(overview){target.innerHTML=columns.slice(0,3).map(([status,title,list])=>boardColumn(status,title,list)).join('');lucide.createIcons();return}const selected=currentFilter==='all'?'new':currentFilter;const selectedColumn=columns.find(column=>column[0]===selected)||columns[0];const selectedOrders=active.filter(order=>order.status===selectedColumn[0]&&(selectedColumn[0]!=='done'||order.paymentStatus==='paid'));target.innerHTML=`<div class="status-tabs-layout"><div class="status-tabs">${columns.map(([status,title,list])=>`<button class="status-tab ${status===selected?'active':''}" data-status-tab="${status}"><span>${title}</span><b class="status-tab-count">${list.length}</b></button>`).join('')}</div><div class="status-board"><div class="order-grid">${boardColumn(selectedColumn[0],selectedColumn[1],selectedOrders)}</div></div></div>`;lucide.createIcons();}
-  const formatHistoryDate=value=>{try{return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(value))}catch{return'--/--/----'}};
+  // Reutilizar o mesmo formatador: criar Intl.DateTimeFormat para cada linha causa travamentos.
+  const historyDateFormatter=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Rio_Branco',day:'2-digit',month:'2-digit',year:'numeric'});
+  const formatHistoryDate=value=>{try{return historyDateFormatter.format(new Date(value))}catch{return'--/--/----'}};
   let historyCalendarCursor=null;
   let historySelectedDate=null;
+  let historyVisibleLimit=80;
+  const HISTORY_PAGE_SIZE=80;
   const historyOrders=()=>orders.filter(order=>order.createdAt);
-  function historyDayData(date){
-    const dayOrders=historyOrders().filter(order=>businessDate(order.createdAt)===date);
-    const paid=dayOrders.filter(order=>order.status==='done'&&order.paymentStatus==='paid');
-    return{
-      orders:dayOrders.length,
-      paid:paid.length,
-      cancelled:dayOrders.filter(order=>order.status==='cancelled').length,
-      total:paid.reduce((sum,order)=>sum+Number(order.total||0),0)
-    };
+  // Resumos por dia prontos em uma passagem pelos pedidos, não 31 varreduras por calendário.
+  let historyDailySummary=new Map(),paidSalesByDate=new Map();
+  function rebuildOrderIndexes(){
+    historyDailySummary=new Map();
+    paidSalesByDate=new Map();
+    for(const order of orders){
+      if(!order.createdAt)continue;
+      const day=businessDate(order.createdAt);
+      const row=historyDailySummary.get(day)||{orders:0,paid:0,cancelled:0,total:0};
+      row.orders++;
+      if(order.status==='cancelled')row.cancelled++;
+      if(order.status==='done'&&order.paymentStatus==='paid'){
+        row.paid++;
+        row.total+=Number(order.total||0);
+        paidSalesByDate.set(day,{orders:row.paid,sales:row.total});
+      }
+      historyDailySummary.set(day,row);
+    }
   }
+  function historyDayData(date){return historyDailySummary.get(date)||{orders:0,paid:0,cancelled:0,total:0};}
   function ensureHistoryCalendarCursor(){
     if(!historyCalendarCursor)historyCalendarCursor=new Date(businessDate(Date.now())+'T12:00:00');
   }
@@ -1014,6 +1029,7 @@ window.LVAlerts=(()=>{
     grid.innerHTML=cells.join('');
     grid.querySelectorAll('[data-history-day]').forEach(button=>button.onclick=()=>{
       historySelectedDate=button.dataset.historyDay;
+      historyVisibleLimit=HISTORY_PAGE_SIZE;
       renderHistoryCalendar();
       renderHistory();
       document.querySelector('#history-table')?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1043,11 +1059,18 @@ window.LVAlerts=(()=>{
       }else selection.innerHTML=`Mostrando <strong>todos os ${rows.length} pedidos</strong>.`;
     }
     target.innerHTML='<div class="table-head"><span>Pedido</span><span>Cliente</span><span>Data / horário</span><span>Total</span><span>Status</span><span></span></div>'+
-      (rows.length?rows.map(order=>`<button class="table-row" data-action="details" data-id="${order.id}"><span><strong>#${order.id}</strong><small>${escapeMenuText(order.orderCode||'Sem código')}</small></span><span>${escapeMenuText(order.customer)}</span><span>${formatHistoryDate(order.createdAt)}<small>${order.time}</small></span><span class="table-total">${money(order.total)}</span><span class="status ${order.status==='done'?'done':order.status==='cancelled'?'cancel':''}">${statusMeta[order.status]?.label||escapeMenuText(order.rawStatus||order.status)}</span><span><i data-lucide="chevron-right"></i></span></button>`).join(''):'<div class="empty-column" style="padding:30px">Nenhum pedido encontrado para esta data ou pesquisa.</div>');
+      (rows.length?rows.slice(0,historyVisibleLimit).map(order=>`<button class="table-row" data-action="details" data-id="${order.id}"><span><strong>#${order.id}</strong><small>${escapeMenuText(order.orderCode||'Sem código')}</small></span><span>${escapeMenuText(order.customer)}</span><span>${formatHistoryDate(order.createdAt)}<small>${order.time}</small></span><span class="table-total">${money(order.total)}</span><span class="status ${order.status==='done'?'done':order.status==='cancelled'?'cancel':''}">${statusMeta[order.status]?.label||escapeMenuText(order.rawStatus||order.status)}</span><span><i data-lucide="chevron-right"></i></span></button>`).join(''):'<div class="empty-column" style="padding:30px">Nenhum pedido encontrado para esta data ou pesquisa.</div>')+
+      (rows.length>historyVisibleLimit?`<button type="button" class="button secondary" data-history-more style="margin:18px auto;display:flex">Mostrar mais pedidos (${Math.min(historyVisibleLimit,rows.length)} de ${rows.length})</button>`:'');
     lucide.createIcons();
   }
   function renderStats(){const todayOrders=orders.filter(order=>isToday(order.createdAt));const count=status=>todayOrders.filter(o=>o.status===status).length;document.querySelector('#stat-new').textContent=count('new');document.querySelector('#stat-delivery').textContent=count('delivery');document.querySelector('#stat-ready').textContent=count('ready');document.querySelector('#new-count').textContent=count('new');const sales=todayOrders.filter(o=>o.status==='done'&&o.paymentStatus==='paid').reduce((sum,o)=>sum+o.total,0);document.querySelector('#stat-sales').textContent=money(sales).replace(',00','')}
-  function render(){renderBoard('orders-board');renderBoard('overview-orders',true);renderHistory();renderStats()}
+  // Atualize somente o que o usuário está vendo. As outras abas renderizam ao abrir.
+  function render(){
+    if(document.querySelector('#view-orders')?.classList.contains('active'))renderBoard('orders-board');
+    if(document.querySelector('#view-overview')?.classList.contains('active'))renderBoard('overview-orders',true);
+    if(document.querySelector('#view-history')?.classList.contains('active'))renderHistory();
+    renderStats();
+  }
   function customerWhatsAppNumber(phone){let digits=String(phone||'').replace(/\D/g,'');if(!digits)return'';if(digits.startsWith('55')&&digits.length>=12)return digits;if(digits.length===10||digits.length===11)return'55'+digits;if(digits.length===8||digits.length===9)return'5568'+digits;return digits}
   function driverWhatsAppNumber(phone){
     let digits=String(phone||'').replace(/\D/g,'');if(!digits)return'';
@@ -1146,9 +1169,34 @@ window.LVAlerts=(()=>{
     const target=['products','edges','promotions'].includes(name)?name:'products';
     document.querySelectorAll('[data-menu-subview]').forEach(button=>{const active=button.dataset.menuSubview===target;button.classList.toggle('active',active);button.setAttribute('aria-selected',active?'true':'false')});
     document.querySelectorAll('[data-menu-panel]').forEach(panel=>panel.classList.toggle('active',panel.dataset.menuPanel===target));
-    if(target==='promotions')loadRealMenu();
+    if(target==='promotions'&&(!menuLastLoadedAt||Date.now()-menuLastLoadedAt>=90000))loadMenuForNavigation();
   }
-  function switchView(view){document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item.id===`view-${view}`));if(view==='orders')renderBoard('orders-board');if(view==='menu'){switchMenuSubview('products');loadRealMenu()}if(view==='drivers')loadDrivers();if(view==='history'){renderHistoryCalendar();renderHistory()}window.scrollTo({top:0,behavior:'smooth'})}
+  let menuLastLoadedAt=0,menuNavigationLoad=null,viewSwitchSerial=0;
+  function loadMenuForNavigation(){
+    if(menuLastLoadedAt&&Date.now()-menuLastLoadedAt<90000)return;
+    if(menuNavigationLoad)return;
+    menuNavigationLoad=Promise.resolve().then(()=>loadRealMenu()).catch(error=>console.error('Erro ao abrir cardápio:',error)).finally(()=>{menuNavigationLoad=null});
+  }
+  function switchView(view){
+    const active=document.querySelector('#view-'+view);
+    if(!active)return;
+    const alreadyActive=active.classList.contains('active');
+    document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.view===view));
+    document.querySelectorAll('.view').forEach(item=>item.classList.toggle('active',item===active));
+    if(alreadyActive)return;
+    window.scrollTo({top:0,behavior:'instant'});
+    // Deixar a aba aparecer antes de iniciar cálculos ou consultas.
+    const serial=++viewSwitchSerial;
+    requestAnimationFrame(()=>setTimeout(()=>{
+      if(serial!==viewSwitchSerial||!active.classList.contains('active'))return;
+      if(view==='orders')renderBoard('orders-board');
+      if(view==='overview')renderBoard('overview-orders',true);
+      if(view==='menu'){switchMenuSubview('products');loadMenuForNavigation()}
+      if(view==='drivers')loadDrivers();
+      if(view==='history'){renderHistoryCalendar();renderHistory()}
+      if(view==='finance')renderFinance();
+    },0));
+  }
   document.addEventListener('click',event=>{const menuSubtab=event.target.closest('[data-menu-subview]');if(menuSubtab){switchMenuSubview(menuSubtab.dataset.menuSubview);return}const nav=event.target.closest('[data-view]');if(nav)switchView(nav.dataset.view);const jump=event.target.closest('[data-view-jump]');if(jump)switchView(jump.dataset.viewJump);const refresh=event.target.closest('[data-refresh-orders]');if(refresh)loadRealOrders();const action=event.target.closest('[data-action]');if(action){const id=Number(action.dataset.id);if(action.dataset.action==='accept'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta?.next)updateStatus(id,meta.next)};if(action.dataset.action==='advance'){const order=orders.find(item=>item.id===id);const meta=order&&orderStatusMeta(order);if(meta&&meta.next)updateStatus(id,meta.next)}if(action.dataset.action==='reject'){updateStatus(id,'cancelled')}if(action.dataset.action==='confirm-payment')confirmPayment(id);if(action.dataset.action==='details')openDetails(id);if(action.dataset.action==='print-order')window.LVPrinting?.printPreferred(id);if(action.dataset.action==='system-print-order')window.LVPrinting?.printNormal(id)}if(event.target.closest('[data-close-modal]')||event.target.id==='detail-modal')document.querySelector('#detail-modal').classList.remove('show');});
   document.addEventListener('click',event=>{
     const addProduct=event.target.closest('[data-add-product]');if(addProduct){openProductCreator();return}
@@ -1162,14 +1210,29 @@ window.LVAlerts=(()=>{
     if(event.target.closest('[data-refresh-drivers]')){loadDrivers();return}
     if(event.target.closest('[data-close-driver-modal]')||event.target.id==='driver-modal')document.querySelector('#driver-modal').classList.remove('show');
   });
-  document.querySelector('#history-search')?.addEventListener('input',event=>{historySearch=event.target.value;renderHistory()});
+  document.querySelector('#history-search')?.addEventListener('input',event=>{historySearch=event.target.value;historyVisibleLimit=HISTORY_PAGE_SIZE;renderHistory()});
+  document.addEventListener('click',event=>{
+    if(!event.target.closest('[data-history-more]'))return;
+    historyVisibleLimit+=HISTORY_PAGE_SIZE;
+    renderHistory();
+  });
   document.querySelector('#history-calendar-prev')?.addEventListener('click',()=>{ensureHistoryCalendarCursor();historyCalendarCursor.setDate(1);historyCalendarCursor.setMonth(historyCalendarCursor.getMonth()-1);renderHistoryCalendar()});
   document.querySelector('#history-calendar-next')?.addEventListener('click',()=>{ensureHistoryCalendarCursor();historyCalendarCursor.setDate(1);historyCalendarCursor.setMonth(historyCalendarCursor.getMonth()+1);renderHistoryCalendar()});
-  document.querySelector('#history-show-all')?.addEventListener('click',()=>{historySelectedDate=null;renderHistoryCalendar();renderHistory()});
+  document.querySelector('#history-show-all')?.addEventListener('click',()=>{historySelectedDate=null;historyVisibleLimit=HISTORY_PAGE_SIZE;renderHistoryCalendar();renderHistory()});
   let expenses=[];document.querySelector('#expense-name').placeholder='Ex.: entregas, gás ou materiais';document.querySelector('#finance-expenses').nextElementSibling.textContent='Ex.: entregas, gás e materiais';
   document.querySelector('#view-finance .finance-grid').insertAdjacentHTML('afterend','<section class="sales-chart"><div class="sales-chart-head"><div><h2>Vendas na semana</h2><p>Comparativo dos últimos 7 dias</p></div><strong class="chart-total" id="chart-total">R$ 0</strong></div><div class="chart-bars" id="chart-bars"></div><div class="chart-legend"><i></i>maior volume de vendas</div></section><section class="profit-calendar"><div class="profit-calendar-head"><div><h2>Resultado estimado por dia</h2><p>Escolha uma data para ver os pedidos reais e a estimativa.</p></div><div class="calendar-controls"><button class="calendar-nav" id="calendar-prev" aria-label="Mês anterior"><i data-lucide="chevron-left"></i></button><span class="calendar-month" id="calendar-month">Este mês</span><button class="calendar-nav" id="calendar-next" aria-label="Próximo mês"><i data-lucide="chevron-right"></i></button></div></div><div class="calendar-grid" id="profit-calendar-grid"></div><div class="day-summary" id="day-summary"></div></section>');
   const escapeFinanceText=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const businessDate=value=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Rio_Branco',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));
+  const businessDateFormatter=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Rio_Branco',year:'numeric',month:'2-digit',day:'2-digit'});
+  const businessDateCache=new Map();
+  const businessDate=value=>{
+    const stamp=value instanceof Date?value.getTime():(typeof value==='number'?value:NaN);
+    const key=Number.isFinite(stamp)?String(Math.floor(stamp/60000)):String(value);
+    if(businessDateCache.has(key))return businessDateCache.get(key);
+    const formatted=businessDateFormatter.format(new Date(value));
+    if(businessDateCache.size>3000)businessDateCache.clear();
+    businessDateCache.set(key,formatted);
+    return formatted;
+  };
   const dateKey=(year,month,day)=>`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   let dailyCostHistory=[],dailyCostLoaded=false,expensesLoaded=false;
   function dailyCostFor(date){return dailyCostHistory.find(item=>item.effective_from<=date)||null}
@@ -1197,8 +1260,11 @@ window.LVAlerts=(()=>{
     finally{button.disabled=false}
   };
   function getRealDayData(year,month,day){
-    const date=dateKey(year,month,day),dayOrders=orders.filter(order=>order.status==='done'&&order.paymentStatus==='paid'&&order.createdAt&&businessDate(order.createdAt)===date),sales=dayOrders.reduce((sum,order)=>sum+order.total,0),saved=dailyCostFor(date),cost=date<=businessDate(Date.now())?Number(saved?.amount||0):0,operational=expenses.filter(item=>item.date===date).reduce((sum,item)=>sum+item.value,0);
-    return{sales,cost,expenses:operational,profit:sales-cost-operational,orders:dayOrders.length,costKnown:dailyCostLoaded&&!!saved&&expensesLoaded};
+    const date=dateKey(year,month,day),aggregate=paidSalesByDate.get(date);
+    const sales=Number(aggregate?.sales||0),saved=dailyCostFor(date);
+    const cost=date<=businessDate(Date.now())?Number(saved?.amount||0):0;
+    const operational=expenses.reduce((sum,item)=>item.date===date?sum+item.value:sum,0);
+    return{sales,cost,expenses:operational,profit:sales-cost-operational,orders:aggregate?.orders||0,costKnown:dailyCostLoaded&&!!saved&&expensesLoaded};
   }
   function renderChart(){const today=new Date(businessDate(Date.now())+'T12:00:00'),days=Array.from({length:7},(_,index)=>{const date=new Date(today);date.setHours(12,0,0,0);date.setDate(today.getDate()-6+index);return{date,label:date.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.',''),data:getRealDayData(date.getFullYear(),date.getMonth(),date.getDate())}}),max=Math.max(...days.map(day=>day.data.sales)),total=days.reduce((sum,day)=>sum+day.data.sales,0);document.querySelector('#chart-total').textContent=money(total).replace(',00','');document.querySelector('#chart-bars').innerHTML=total?days.map(day=>`<div class="chart-day ${day.data.sales===max&&max>0?'best':''}"><strong>${money(day.data.sales).replace(',00','')}</strong><div class="chart-bar-wrap"><div class="chart-bar" style="height:${Math.max(8,max?day.data.sales/max*100:0)}%" title="${day.label}: ${money(day.data.sales)}"></div></div><span>${day.label}</span></div>`).join(''):'<div class="empty-column">Sem vendas neste período</div>'}
   let calendarCursor=new Date(businessDate(Date.now())+"T12:00:00");
@@ -1207,7 +1273,7 @@ window.LVAlerts=(()=>{
   function renderProfitCalendar(selectedDay=calendarCursor.getDate()){calendarCursor.setDate(selectedDay);const monthName=calendarCursor.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}),year=calendarCursor.getFullYear(),month=calendarCursor.getMonth(),firstDay=(new Date(year,month,1).getDay()+6)%7,daysInMonth=new Date(year,month+1,0).getDate(),today=new Date(businessDate(Date.now())+'T12:00:00');document.querySelector('#calendar-month').textContent=monthName;let cells=['<div class="calendar-weekday">Seg</div><div class="calendar-weekday">Ter</div><div class="calendar-weekday">Qua</div><div class="calendar-weekday">Qui</div><div class="calendar-weekday">Sex</div><div class="calendar-weekday">Sáb</div><div class="calendar-weekday">Dom</div>'];for(let index=0;index<firstDay;index++)cells.push('<div class="calendar-day empty"></div>');for(let day=1;day<=daysInMonth;day++){const data=getRealDayData(year,month,day),isToday=day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();cells.push(`<button class="calendar-day selectable ${isToday?'today':''} ${day===selectedDay?'selected':''}" data-calendar-day="${day}"><div class="calendar-day-name">${new Date(year,month,day).toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</div><div class="calendar-date">${String(day).padStart(2,'0')}</div><div class="calendar-profit ${data.profit<0?'negative':'positive'}">${data.orders||data.cost||data.expenses?`${data.profit<0?'-':''}${money(Math.abs(data.profit)).replace(',00','')}`:'-'}</div></button>`)}document.querySelector('#profit-calendar-grid').innerHTML=cells.join('');document.querySelectorAll('[data-calendar-day]').forEach(button=>button.onclick=()=>renderProfitCalendar(Number(button.dataset.calendarDay)));renderDaySummary(selectedDay)}
   document.querySelector('#calendar-prev').onclick=()=>{calendarCursor.setDate(1);calendarCursor.setMonth(calendarCursor.getMonth()-1);renderProfitCalendar(1)};document.querySelector('#calendar-next').onclick=()=>{calendarCursor.setDate(1);calendarCursor.setMonth(calendarCursor.getMonth()+1);renderProfitCalendar(1)};
   async function loadExpenses(){const{data,error}=await db.from('expenses').select('id,name,value,expense_date,created_at').order('created_at',{ascending:false});if(error){console.error('Erro ao carregar gastos:',error);showToast('Erro ao carregar gastos');return}expenses=(data||[]).map(item=>({id:item.id,name:item.name,value:Number(item.value||0),date:item.expense_date,createdAt:item.created_at}));expensesLoaded=true;renderFinance()}
-  function renderFinance(){const today=businessDate(Date.now()),[year,month,day]=today.split('-').map(Number),daily=getRealDayData(year,month-1,day),sales=daily.sales,productCost=daily.cost,operational=daily.expenses,profit=daily.profit;const finalized=orders.filter(order=>order.status==='done'&&order.paymentStatus==='paid'&&order.createdAt&&businessDate(order.createdAt)===today);const values={sales,cost:productCost,expenses:operational,profit,orderCount:finalized.length,gross:sales,productCost,operationalCost:operational,totalProfit:profit};Object.entries(values).forEach(([key,value])=>{const element=document.querySelector('#finance-'+key.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase()));if(element)element.textContent=key==='orderCount'?value:money(value).replace(',00','')});const profitCard=document.querySelector('#finance-profit').parentElement;profitCard.classList.toggle('negative',profit<0);document.querySelector('#finance-total-profit').parentElement.classList.toggle('negative',profit<0);profitCard.querySelector('.finance-label').textContent='Resultado estimado';profitCard.querySelector('.finance-note').textContent=!daily.costKnown?'Estimativa incompleta: confira o custo e os gastos':profit<0?'Resultado estimado negativo':'Resultado estimado após custos';document.querySelector('#expense-list').innerHTML=expenses.some(item=>item.date===today)?expenses.map((item,index)=>({item,index})).filter(({item})=>item.date===today).map(({item,index})=>`<div class="expense-item"><span>${escapeFinanceText(item.name)}</span><strong>${money(item.value)}</strong><button data-remove-expense="${index}">Remover</button></div>`).join(''):'<div class="empty-column">Nenhum gasto registrado</div>';renderChart();renderProfitCalendar();lucide.createIcons()}
+  function renderFinance(){if(!document.querySelector('#view-finance')?.classList.contains('active'))return;const today=businessDate(Date.now()),[year,month,day]=today.split('-').map(Number),daily=getRealDayData(year,month-1,day),sales=daily.sales,productCost=daily.cost,operational=daily.expenses,profit=daily.profit;const finalized=orders.filter(order=>order.status==='done'&&order.paymentStatus==='paid'&&order.createdAt&&businessDate(order.createdAt)===today);const values={sales,cost:productCost,expenses:operational,profit,orderCount:finalized.length,gross:sales,productCost,operationalCost:operational,totalProfit:profit};Object.entries(values).forEach(([key,value])=>{const element=document.querySelector('#finance-'+key.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase()));if(element)element.textContent=key==='orderCount'?value:money(value).replace(',00','')});const profitCard=document.querySelector('#finance-profit').parentElement;profitCard.classList.toggle('negative',profit<0);document.querySelector('#finance-total-profit').parentElement.classList.toggle('negative',profit<0);profitCard.querySelector('.finance-label').textContent='Resultado estimado';profitCard.querySelector('.finance-note').textContent=!daily.costKnown?'Estimativa incompleta: confira o custo e os gastos':profit<0?'Resultado estimado negativo':'Resultado estimado após custos';document.querySelector('#expense-list').innerHTML=expenses.some(item=>item.date===today)?expenses.map((item,index)=>({item,index})).filter(({item})=>item.date===today).map(({item,index})=>`<div class="expense-item"><span>${escapeFinanceText(item.name)}</span><strong>${money(item.value)}</strong><button data-remove-expense="${index}">Remover</button></div>`).join(''):'<div class="empty-column">Nenhum gasto registrado</div>';renderChart();renderProfitCalendar();lucide.createIcons()}
   document.querySelector('#expense-form').onsubmit=async event=>{event.preventDefault();const name=document.querySelector('#expense-name').value.trim(),value=Number(document.querySelector('#expense-value').value);if(!name||!Number.isFinite(value)||value<=0)return;const{error}=await db.from('expenses').insert({name,value,expense_date:businessDate(Date.now())});if(error){console.error('Erro ao adicionar gasto:',error);showToast('Erro ao adicionar gasto');return}event.target.reset();await loadExpenses()};
   document.addEventListener('click',async event=>{const remove=event.target.closest('[data-remove-expense]');if(!remove)return;const expense=expenses[Number(remove.dataset.removeExpense)];if(!expense?.id)return;const{error}=await db.from('expenses').delete().eq('id',expense.id);if(error){console.error('Erro ao remover gasto:',error);showToast('Erro ao remover gasto');return}await loadExpenses()});
   const financeNav=document.createElement('button');financeNav.className='nav-item';financeNav.dataset.view='finance';financeNav.innerHTML='<i data-lucide="calculator"></i><span>Financeiro</span>';document.querySelector('.nav').appendChild(financeNav);
@@ -1290,10 +1356,10 @@ window.LVAlerts=(()=>{
 
   async function initPanel(){
     await loadStoreStatus();
-    await loadDailyCosts();
-    await loadExpenses();
     await loadRealOrders({notify:false});
-    loadRealMenu();
+    // Custos são independentes da fila: carregar sem atrasar o painel principal.
+    void Promise.allSettled([loadDailyCosts(),loadExpenses()]);
+    // Cardápio é carregado apenas ao entrar na aba correspondente.
     subscribeToOrders();
     startOrdersRefresh();
     if(location.hash==='#finance')switchView('finance');
