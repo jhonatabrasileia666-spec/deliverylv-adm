@@ -527,7 +527,8 @@ window.LVAlerts=(()=>{
   const statusMeta={new:{label:'Novo pedido',next:null,nextLabel:''},accepted:{label:'Novo pedido',next:null,nextLabel:''},prep:{label:'Novo pedido',next:null,nextLabel:''},ready:{label:'Pronto',next:'delivery',nextLabel:'Saiu para entrega'},delivery:{label:'Saiu para entrega',next:null,nextLabel:'Confirmar pagamento'},done:{label:'Finalizado',next:null,nextLabel:'Finalizado'},cancelled:{label:'Recusado',next:null,nextLabel:'Recusado'}};
   let orders=[];let currentFilter='all';let historySearch='';let ordersChannel=null;let ordersRefreshTimer=null;let knownOrderIds=new Set();
   const normalizeHistorySearch=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-  const money=value=>value.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const moneyFormatter=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  const money=value=>moneyFormatter.format(value);
   const statusClass=status=>status==='new'?'new':status==='prep'?'prep':status==='ready'?'ready':'';
   const isToday=value=>businessDate(value)===businessDate(Date.now());
   function normalizeOrderType(value){const type=String(value||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(type==='pickup'||type==='retirada'||type==='retirada no balcao')return'Retirada no balcão';if(type==='delivery'||type==='entrega')return'Entrega';if(type==='local'||type==='comer no local'||type==='comendo no local')return'Comer no local';return'Tipo não identificado'}
@@ -1068,7 +1069,7 @@ window.LVAlerts=(()=>{
   function render(){
     if(document.querySelector('#view-orders')?.classList.contains('active'))renderBoard('orders-board');
     if(document.querySelector('#view-overview')?.classList.contains('active'))renderBoard('overview-orders',true);
-    if(document.querySelector('#view-history')?.classList.contains('active'))renderHistory();
+    if(document.querySelector('#view-history')?.classList.contains('active')){renderHistoryCalendar();renderHistory()}
     renderStats();
   }
   function customerWhatsAppNumber(phone){let digits=String(phone||'').replace(/\D/g,'');if(!digits)return'';if(digits.startsWith('55')&&digits.length>=12)return digits;if(digits.length===10||digits.length===11)return'55'+digits;if(digits.length===8||digits.length===9)return'5568'+digits;return digits}
