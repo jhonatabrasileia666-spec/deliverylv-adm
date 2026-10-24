@@ -537,6 +537,27 @@ window.LVAlerts=(()=>{
   function canConfirmPayment(order){return order.paymentStatus!=='paid'&&(order.status==='delivery'||(order.status==='ready'&&(order.type==='Retirada no balcão'||order.type==='Comer no local')))}
   function normalizeStatus(status){const value=String(status||'').toLowerCase();if(['1','new','pending','novo','awaiting_confirmation','accepted','aceito','2','preparing','in_preparation','prep','em_preparo'].includes(value))return'new';if(['3','ready','pronto','out_for_delivery','delivering','delivered','delivery'].includes(value))return value==='ready'||value==='pronto'?'ready':'delivery';if(['4','completed','done','finalizado'].includes(value))return'done';if(['cancelled','canceled','rejected','recusado','cancelado'].includes(value))return'cancelled';return'new'}
   function normalizeOrder(row,items=[]){const type=normalizeOrderType(row.order_type),paymentStatus=String(row.payment_status||'pending').toLowerCase(),rawStatus=normalizeStatus(row.status);let status=rawStatus;if(rawStatus==='done'&&paymentStatus!=='paid')status=type==='Entrega'?'delivery':'ready';return{id:row.id,customer:row.customer_name||'Cliente não informado',phone:row.customer_phone||'',address:row.address||'',notes:row.notes||'',createdAt:row.created_at||Date.now(),minutes:Math.max(0,Math.floor((Date.now()-new Date(row.created_at||Date.now()).getTime())/60000)),status,rawStatus,time:new Date(row.created_at||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),type,payment:row.payment_method||'A confirmar',paymentStatus,paidAt:row.paid_at||null,orderCode:row.order_code||'',total:Number(row.total||0),items}}
+  // Pagina os pedidos e itens por ID para evitar o limite de 1.000 linhas do Data API.
+  // Cursor por ID evita que pedidos novos desloquem as paginas durante a atualizacao.
+  async function fetchAllOrderRows(table,columns){
+    const all=[],pageSize=500;
+    let beforeId=null;
+    while(true){
+      let request=db.from(table).select(columns).order('id',{ascending:false}).limit(pageSize);
+      if(beforeId!==null)request=request.lt('id',beforeId);
+      const {data,error}=await request;
+      if(error)return {data:null,error};
+      const page=data||[];
+      all.push(...page);
+      if(page.length<pageSize)break;
+      const lastId=page[page.length-1]?.id;
+      if(lastId===undefined||lastId===null||String(lastId)===beforeId){
+        return {data:null,error:new Error('Falha na paginacao de '+table)};
+      }
+      beforeId=String(lastId);
+    }
+    return {data:all,error:null};
+  }
   // Carregamento serializado: o Realtime sinaliza mudanças sem multiplicar leituras simultâneas.
   let ordersFetching=null,ordersRefreshQueued=false,ordersRefreshQueuedNotify=false,ordersRealtimeTimer=null;
   let ordersProductsCache=null,ordersProductsCacheAt=0,ordersLastSnapshot='',ordersLastErrorAt=0;
@@ -545,8 +566,8 @@ window.LVAlerts=(()=>{
     ordersFetching=(async()=>{
       const useCachedProducts=ordersProductsCache&&Date.now()-ordersProductsCacheAt<600000;
       const [orderResult,itemResult,productResult]=await Promise.all([
-        db.from('orders').select('id,order_code,customer_name,customer_phone,address,notes,order_type,payment_method,payment_status,paid_at,status,total,created_at').order('created_at',{ascending:false}).order('id',{ascending:false}),
-        db.from('order_items').select('id,order_id,product_id,product_name,detail,quantity,unit_price,is_addition,added_at'),
+        fetchAllOrderRows('orders','id,order_code,customer_name,customer_phone,address,notes,order_type,payment_method,payment_status,paid_at,status,total,created_at'),
+        fetchAllOrderRows('order_items','id,order_id,product_id,product_name,detail,quantity,unit_price,is_addition,added_at'),
         useCachedProducts?Promise.resolve({data:ordersProductsCache,error:null}):db.from('products').select('id,name,base_price')
       ]);
       const failure=orderResult.error||itemResult.error||productResult.error;
@@ -555,7 +576,8 @@ window.LVAlerts=(()=>{
         if(Date.now()-ordersLastErrorAt>60000){ordersLastErrorAt=Date.now();showToast('Erro ao atualizar pedidos')}
         return;
       }
-      const data=orderResult.data||[],itemRows=itemResult.data||[],products=productResult.data||[];
+      const data=(orderResult.data||[]).sort((a,b)=>(new Date(b.created_at).getTime()-new Date(a.created_at).getTime())||(Number(b.id)-Number(a.id)));
+      const itemRows=itemResult.data||[],products=productResult.data||[];
       if(!useCachedProducts){ordersProductsCache=products;ordersProductsCacheAt=Date.now()}
       // Atualizar os minutos exibidos sem reconstruir toda a interface a cada consulta.
       const snapshot=Math.floor(Date.now()/60000)+'|'+JSON.stringify([data,itemRows]);
@@ -2448,6 +2470,12 @@ window.LVAlerts=(()=>{
 
     if(!order){
       showToast?.('Pedido não encontrado');
+      return false;
+    }
+
+    if(!Array.isArray(order.items)||order.items.length===0){
+      showToast?.('Itens nao carregados. Atualize o painel e imprima novamente.');
+      loadRealOrders({notify:false});
       return false;
     }
 
