@@ -638,7 +638,7 @@ window.LVAlerts=(()=>{
   async function loadRealMenu(){
     const target=document.querySelector('.menu-table');if(!target)return;
     const[{data:products,error:productsError},{data:categories,error:categoriesError},{data:sizeRows,error:sizesError},{data:pizzaSizeRows,error:pizzaSizesError},{data:pizzaEdgeRows,error:pizzaEdgesError},{data:esfihaCategoryRows,error:esfihaCategoryError}]=await Promise.all([
-      db.from('products').select('id,name,description,base_price,price_addition,image_url,category_id,active,pricing_mode,allow_edges,sort_order,promotion_active,promotion_discount,promotion_sort_order,promotion_size').order('name'),
+      db.from('products').select('id,name,description,base_price,price_addition,image_url,category_id,active,pricing_mode,allow_edges,sort_order,promotion_active,promotion_discount,promotion_sort_order,promotion_size,combo_kind').order('name'),
       db.from('categories').select('id,slug,name,active').eq('active',true).order('sort_order'),
       db.from('product_sizes').select('id,product_id,name,price,active,sort_order').order('sort_order'),
       db.from('pizza_sizes').select('id,name,price,active,sort_order').order('sort_order'),
@@ -797,7 +797,7 @@ window.LVAlerts=(()=>{
   function renderPromotionManager(){
     const host=document.querySelector('#promotion-manager'),status=document.querySelector('#promotion-status'),save=document.querySelector('#save-promotions');if(!host)return;
     const categoryMap=new Map(menuCategories.map(category=>[String(category.id),category.name||category.slug]));
-    const products=menuProducts.filter(item=>item.active!==false).sort((a,b)=>Number(Boolean(b.promotion_active))-Number(Boolean(a.promotion_active))||Number(a.promotion_sort_order||0)-Number(b.promotion_sort_order||0)||String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    const products=menuProducts.filter(item=>item.active!==false&&!item.combo_kind).sort((a,b)=>Number(Boolean(b.promotion_active))-Number(Boolean(a.promotion_active))||Number(a.promotion_sort_order||0)-Number(b.promotion_sort_order||0)||String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
     if(!products.length){host.innerHTML='<div class="promotion-empty">Nenhum produto disponível para promoção.</div>';if(status)status.textContent='0 produtos';if(save)save.disabled=true;return}
     host.innerHTML=products.map(item=>{
       const image=safeProductImage(item.image_url)||'https://placehold.co/96x96?text=LV',active=Boolean(item.promotion_active)&&Number(item.promotion_discount||0)>0,discount=Number(item.promotion_discount||0),sizeRows=promotionSizeRows(item);
@@ -2584,6 +2584,7 @@ window.LVAlerts=(()=>{
 })();
 </script>
 
+<script src="./lv-pizza-combo-admin.js?v=20261106-pizza-combo-v1"></script>
 </body>
 </html>
 
