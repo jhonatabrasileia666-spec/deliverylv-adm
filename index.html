@@ -667,7 +667,7 @@ window.LVAlerts=(()=>{
       const pricedSizes=ownSizes.length?ownSizes:fallbackSizes;
       const base=item.pricing_mode==='sizes'&&pricedSizes.length?Math.min(...pricedSizes.map(size=>Number(size.price||0))):Number(item.base_price||0);
       const priceText=item.pricing_mode==='sizes'?'A partir de '+money(base):money(base);
-      return `<div class="table-row" data-product-row="${item.id}"><div class="menu-product">${thumb}<div class="menu-product-copy"><strong>${escapeMenuText(item.name||'')}</strong><small>${escapeMenuText(item.description||'Sem descrição')}</small></div></div><span>${escapeMenuText(categoryMap.get(item.category_id)||'-')}</span><span class="table-total">${priceText}</span><span class="addition-value ${addition>0?'':'none'}">${addition>0?'+ '+money(addition):'Sem acréscimo'}</span><span class="availability ${item.active===false?'off':''}">${item.active===false?'Indisponível':'Disponível'}</span><button class="menu-edit" data-edit-product="${item.id}" type="button" aria-label="Editar ${escapeMenuText(item.name||'produto')}"><i data-lucide="pencil"></i></button></div>`
+      return `<div class="table-row" data-product-row="${item.id}"><div class="menu-product">${thumb}<div class="menu-product-copy"><strong>${escapeMenuText(item.name||'')}</strong><small>${escapeMenuText(item.description||'Sem descrição')}</small></div></div><span>${isPizza&&addition>0?'Pizzas Especiais':escapeMenuText(categoryMap.get(item.category_id)||'-')}</span><span class="table-total">${priceText}</span><span class="addition-value ${addition>0?'':'none'}">${addition>0?'+ '+money(addition):'Sem acréscimo'}</span><span class="availability ${item.active===false?'off':''}">${item.active===false?'Indisponível':'Disponível'}</span><button class="menu-edit" data-edit-product="${item.id}" type="button" aria-label="Editar ${escapeMenuText(item.name||'produto')}"><i data-lucide="pencil"></i></button></div>`
     }).join('');
     menuLastLoadedAt=Date.now();
     lucide.createIcons();
@@ -892,13 +892,13 @@ window.LVAlerts=(()=>{
     return data?.publicUrl||'';
   }
   function collectProductSizes(){
-    return ['P','M','G'].filter(code=>document.querySelector(`[data-size-enabled="${code}"]`)?.checked).map((code,index)=>({name:code,price:Number(document.querySelector(`[data-size-price="${code}"]`).value),active:true,sort_order:index+1}));
+    return ['P','M','G'].filter(code=>document.querySelector(`[data-size-enabled="${code}"]`)?.checked).map((code,index)=>({name:({P:'Pequena',M:'Média',G:'Grande'})[code],price:Number(document.querySelector(`[data-size-price="${code}"]`).value),active:true,sort_order:index+1}));
   }
   async function saveProductForm(event,id=null){
     event.preventDefault();
     const form=event.currentTarget,button=form.querySelector('button[type="submit"]');
     const categoryValue=document.querySelector('#edit-product-category').value;
-    let categoryId=categoryValue==='__new__'?null:Number(categoryValue);
+    let categoryId=categoryValue==='__new__'?null:categoryValue;
     const newCategoryName=document.querySelector('#edit-product-new-category')?.value.trim()||'';
     const name=document.querySelector('#edit-product-name').value.trim();
     const description=document.querySelector('#edit-product-description').value.trim();
@@ -922,10 +922,10 @@ window.LVAlerts=(()=>{
         const slug=newCategoryName.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
         if(!slug)throw new Error('Nome da categoria inválido');
         const existing=menuCategories.find(entry=>String(entry.slug||'').toLowerCase()===slug||String(entry.name||'').toLowerCase()===newCategoryName.toLowerCase());
-        if(existing){categoryId=Number(existing.id)}else{
+        if(existing){categoryId=existing.id}else{
           const{data:createdCategory,error:categoryError}=await db.from('categories').insert({name:newCategoryName,slug,active:true,sort_order:menuCategories.length+1}).select('id,slug,name').single();
           if(categoryError||!createdCategory?.id)throw categoryError||new Error('Não foi possível criar a categoria');
-          categoryId=Number(createdCategory.id);
+          categoryId=createdCategory.id;
         }
       }
       let imageUrl=rawImage?safeProductImage(rawImage):'';
