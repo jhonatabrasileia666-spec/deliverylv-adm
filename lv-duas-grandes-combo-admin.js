@@ -19,8 +19,8 @@
       panel.innerHTML='<h2>Combo 2 Pizzas Grandes</h2><p>Produto não encontrado no catálogo.</p>';return;
     }
     panel.innerHTML='<div class="promotion-admin-head"><div><span class="eyebrow">Promoção de pizzas</span>'+
-      '<h2>2 pizzas Grandes · Calabresa ou Frango</h2>'+
-      '<p>Permite escolher o sabor de cada pizza, uma borda por pizza e refrigerante opcional. Os adicionais seguem os preços cadastrados no cardápio.</p>'+
+      '<h2>2 pizzas Grandes · Calabresa, Frango ou Três Porcos</h2>'+
+      '<p>Permite escolher Calabresa, Frango ou Três Porcos em cada pizza, uma borda por pizza e refrigerante opcional. Três Porcos acrescenta R$ 5 por pizza, seguindo o preço do cardápio.</p>'+
       '</div></div><div style="display:flex;flex-wrap:wrap;align-items:end;gap:14px">'+
       '<label style="display:grid;gap:6px;min-width:175px;flex:1"><strong>Preço das 2 pizzas (R$)</strong>'+
       '<input type="number" id="lv-duas-price" min="0.01" step="0.01" value="'+Number(combo.base_price||0).toFixed(2)+
@@ -28,7 +28,7 @@
       '<label style="display:flex;align-items:center;gap:10px;min-height:42px">'+
       '<input type="checkbox" id="lv-duas-active" '+(combo.active?'checked':'')+'> <strong>Mostrar no cardápio</strong></label>'+
       '<button class="button" id="lv-duas-save" type="button">Salvar promoção</button></div>'+
-      '<p class="menu-help" style="margin-top:12px">As duas pizzas custam o valor informado. Bordas e bebida são cobradas separadamente, conforme a escolha do cliente. Esta promoção não altera os preços das pizzas avulsas.</p>';
+      '<p class="menu-help" style="margin-top:12px">As duas pizzas partem do valor informado. Três Porcos tem acréscimo por pizza; bordas e bebida são cobradas separadamente, conforme a escolha do cliente. Esta promoção não altera os preços das pizzas avulsas.</p>';
     panel.querySelector('#lv-duas-save').onclick=async()=>{
       const price=Number(panel.querySelector('#lv-duas-price').value);
       const active=panel.querySelector('#lv-duas-active').checked;
