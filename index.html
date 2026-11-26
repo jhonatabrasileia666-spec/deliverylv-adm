@@ -2586,6 +2586,20 @@ window.LVAlerts=(()=>{
 
 <script src="./lv-pizza-combo-admin.js?v=20261117-combo-casal-doce-v2"></script>
 <script src="./lv-duas-grandes-combo-admin.js?v=20261122-tres-porcos-v2"></script>
+<script id="lv-relampago-admin-script">(function installRelampagoAdmin(){
+  const previous=loadRealMenu;
+  loadRealMenu=async function(){
+    const result=await previous();
+    const host=document.querySelector('#menu-subview-promotions');if(!host)return result;
+    let panel=document.querySelector('#lv-relampago-admin');
+    if(!panel){panel=document.createElement('section');panel.id='lv-relampago-admin';panel.className='promotion-admin-panel';host.prepend(panel)}
+    const p=menuProducts.find(p=>p.combo_kind==='relampago_grande');
+    if(!p){panel.innerHTML='<h2>Promoção Relâmpago</h2><p>Aguardando cadastro da promoção.</p>';return result}
+    panel.innerHTML=`<h2>Promoção Relâmpago · Pizza Grande</h2><p>1 ou 2 sabores disponíveis. Adicionais integrais, bordas disponíveis exceto Catupiry e refrigerantes à parte.</p><div style="display:flex;flex-wrap:wrap;gap:14px;align-items:end"><label>Preço (R$)<input id="lv-flash-price" type="number" min="0.01" step="0.01" value="${Number(p.base_price).toFixed(2)}"></label><label><input id="lv-flash-active" type="checkbox" ${p.active?'checked':''}> Mostrar no cardápio</label><button class="button" id="lv-flash-save" type="button">Salvar promoção</button></div>`;
+    panel.querySelector('#lv-flash-save').onclick=async()=>{const price=Number(panel.querySelector('#lv-flash-price').value),active=panel.querySelector('#lv-flash-active').checked;if(!Number.isFinite(price)||price<=0||price>999999.99)return showToast('Informe um preço válido');const b=panel.querySelector('#lv-flash-save');b.disabled=true;try{const {data,error}=await db.from('products').update({base_price:Math.round(price*100)/100,active}).eq('id',p.id).select('id');if(error||!data?.length)throw error||new Error('Não foi possível salvar');await loadRealMenu();showToast(active?'Promoção ativada':'Promoção desativada')}catch(e){showToast(e.message||'Erro ao salvar');b.disabled=false}};
+    return result;
+  };
+})();</script>
 </body>
 </html>
 
